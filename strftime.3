@@ -274,6 +274,14 @@ is defined, then the following additional conversion is available:
 .TP
 .B %v
 The date in VMS format (e.g. 20-JUN-1991).
+.SH MAIL HEADER EXTENSIONS
+If
+.B MAILHEADER_EXT
+is defined, then the following additional conversion is available:
+.TP
+.B %z
+The timezone offset in a +HHMM format (e.g. the format necessary to
+produce RFC-822/RFC-1036 date headers).
 .SH SEE ALSO
 .IR time (2),
 .IR ctime (3),

@@ -28,6 +28,7 @@
  * Updated February, 1994
  * Updated May, 1994
  * Updated January 1995
+ * Updated September 1995
  *
  * Fixes from ado@elsie.nci.nih.gov
  * February 1991, May 1992
@@ -35,6 +36,8 @@
  * May, 1993
  * Further fixes from ado@elsie.nci.nih.gov
  * February 1994
+ * %z code from chip@chinacat.unicom.com
+ * Applied September 1995
  */
 
 #ifndef GAWK
@@ -53,6 +56,7 @@
 #define SUNOS_EXT	1	/* stuff in SunOS strftime routine */
 #define POSIX2_DATE	1	/* stuff in Posix 1003.2 date command */
 #define VMS_EXT		1	/* include %v for VMS date format */
+#define MAILHEADER_EXT	1	/* add %z for HHMM format */
 #ifndef GAWK
 #define POSIX_SEMANTICS	1	/* call tzset() if TZ changes */
 #endif
@@ -151,6 +155,7 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 	char *endp = s + maxsize;
 	char *start = s;
 	auto char tbuf[100];
+	long off;
 	int i;
 	static short first = 1;
 #ifdef POSIX_SEMANTICS
@@ -159,9 +164,13 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 	char *tz;
 #endif /* POSIX_SEMANTICS */
 #ifndef HAVE_TM_ZONE
+#ifndef HAVE_TM_NAME
+#ifndef HAVE_TZNAME
 	extern char *timezone();
 	struct timeval tv;
 	struct timezone zone;
+#endif /* HAVE_TZNAME */
+#endif /* HAVE_TM_NAME */
 #endif /* HAVE_TM_ZONE */
 
 	/* various tables, useful in North America */
@@ -353,6 +362,58 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 			sprintf(tbuf, "%d", 1900 + timeptr->tm_year);
 			break;
 
+#ifdef MAILHEADER_EXT
+		/*
+		 * From: Chip Rosenthal <chip@chinacat.unicom.com>
+		 * Date: Sun, 19 Mar 1995 00:33:29 -0600 (CST)
+		 * 
+		 * Warning: the %z [code] is implemented by inspecting the
+		 * timezone name conditional compile settings, and
+		 * inferring a method to get timezone offsets. I've tried
+		 * this code on a couple of machines, but I don't doubt
+		 * there is some system out there that won't like it.
+		 * Maybe the easiest thing to do would be to bracket this
+		 * with an #ifdef that can turn it off. The %z feature
+		 * would be an admittedly obscure one that most folks can
+		 * live without, but it would be a great help to those of
+		 * us that muck around with various message processors.
+		 */
+ 		case 'z':	/* time zone offset east of GMT e.g. -0600 */
+#ifdef HAVE_TM_NAME
+			/*
+			 * Systems with tm_name probably have tm_tzadj as
+			 * secs west of GMT.  Convert to mins east of GMT.
+			 */
+			off = -timeptr->tm_tzadj / 60;
+#else /* !HAVE_TM_NAME */
+#ifdef HAVE_TM_ZONE
+			/*
+			 * Systems with tm_zone probably have tm_gmtoff as
+			 * secs east of GMT.  Convert to mins east of GMT.
+			 */
+			off = timeptr->tm_gmtoff / 60;
+#else /* !HAVE_TM_ZONE */
+#if HAVE_TZNAME
+			/*
+			 * Systems with tzname[] probably have timezone as
+			 * secs west of GMT.  Convert to mins east of GMT.
+			 */
+			off = -(daylight ? timezone : altzone) / 60;
+#else /* !HAVE_TZNAME */
+			off = -zone.tz_minuteswest;
+#endif /* !HAVE_TZNAME */
+#endif /* !HAVE_TM_ZONE */
+#endif /* !HAVE_TM_NAME */
+			if (off < 0) {
+				tbuf[0] = '-';
+				off = -off;
+			} else {
+				tbuf[0] = '+';
+			}
+			sprintf(tbuf+1, "%02d%02d", off/60, off%60);
+			break;
+#endif /* MAILHEADER_EXT */
+
 		case 'Z':	/* time zone name or abbrevation */
 #ifdef HAVE_TZNAME
 			i = (daylight && timeptr->tm_isdst);	/* 0 or 1 */
@@ -361,11 +422,15 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 #ifdef HAVE_TM_ZONE
 			strcpy(tbuf, timeptr->tm_zone);
 #else
+#ifdef HAVE_TM_NAME
+			strcpy(tbuf, timeptr->tm_name);
+#else
 			gettimeofday(& tv, & zone);
 			strcpy(tbuf, timezone(zone.tz_minuteswest,
 						timeptr->tm_isdst));
-#endif
-#endif
+#endif /* HAVE_TM_NAME */
+#endif /* HAVE_TM_ZONE */
+#endif /* HAVE_TZNAME */
 			break;
 
 #ifdef SYSV_EXT
@@ -728,6 +793,7 @@ static char *array[] =
 	"(%%w)                       day of week (0..6, Sunday == 0)  %w",
 	"(%%x)                appropriate locale date representation  %x",
 	"(%%y)                      last two digits of year (00..99)  %y",
+	"(%%z)      timezone offset east of GMT as HHMM (e.g. -0500)  %z",
 	(char *) NULL
 };
 
