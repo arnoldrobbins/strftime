@@ -285,8 +285,12 @@ setting of the
 .B LC_TIME
 environment variable.
 .LP
-It is not clear what is ``appropriate'' for the C locale; the values
-returned are a best guess on the author's part.
+The ``appropriate'' values used for
+.BR %c ,
+.BR %x ,
+are
+.B %X
+are those specified by the 1003.2 standard for the POSIX locale.
 .SH CAVEATS
 The pre-processor symbol
 .B POSIX_SEMANTICS

@@ -12,7 +12,8 @@
  * For VMS dates, add VMS_EXT.
  * For complete POSIX semantics, add POSIX_SEMANTICS.
  *
- * The code for %c, %x, and %X is my best guess as to what's "appropriate".
+ * The code for %c, %x, and %X now follows the 1003.2 specification for
+ * the POSIX locale.
  * This version ignores LOCALE information.
  * It also doesn't worry about multi-byte characters.
  * So there.
@@ -26,6 +27,7 @@
  * Updated April, 1993
  * Updated February, 1994
  * Updated May, 1994
+ * Updated January 1995
  *
  * Fixes from ado@elsie.nci.nih.gov
  * February 1991, May 1992
@@ -272,14 +274,7 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 			break;
 
 		case 'c':	/* appropriate date and time representation */
-			sprintf(tbuf, "%s %s %2d %02d:%02d:%02d %d",
-				days_a[range(0, timeptr->tm_wday, 6)],
-				months_a[range(0, timeptr->tm_mon, 11)],
-				range(1, timeptr->tm_mday, 31),
-				range(0, timeptr->tm_hour, 23),
-				range(0, timeptr->tm_min, 59),
-				range(0, timeptr->tm_sec, 61),
-				timeptr->tm_year + 1900);
+			strftime(tbuf, sizeof tbuf, "%a %b %e %H:%M:%S %Y", timeptr);
 			break;
 
 		case 'd':	/* day of the month, 01 - 31 */
@@ -342,18 +337,11 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 			break;
 
 		case 'x':	/* appropriate date representation */
-			sprintf(tbuf, "%s %s %2d %d",
-				days_a[range(0, timeptr->tm_wday, 6)],
-				months_a[range(0, timeptr->tm_mon, 11)],
-				range(1, timeptr->tm_mday, 31),
-				timeptr->tm_year + 1900);
+			strftime(tbuf, sizeof tbuf, "%m/%d/%y", timeptr);
 			break;
 
 		case 'X':	/* appropriate time representation */
-			sprintf(tbuf, "%02d:%02d:%02d",
-				range(0, timeptr->tm_hour, 23),
-				range(0, timeptr->tm_min, 59),
-				range(0, timeptr->tm_sec, 61));
+			strftime(tbuf, sizeof tbuf, "%H:%M:%S", timeptr);
 			break;
 
 		case 'y':	/* year without a century, 00 - 99 */
