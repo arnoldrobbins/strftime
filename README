@@ -1,4 +1,4 @@
-Sun May  2 22:08:49 EDT 1993
+Tue Feb 15 08:26:04 EST 1994
 
 This package implements the Posix 1003.2 date command, as a wrapper around
 an extended version of the ANSI strftime(3) library routine.
