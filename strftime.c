@@ -1,21 +1,21 @@
 /*
  * strftime.c
  *
- * Public-domain implementation of ANSI C library routine.
+ * Public-domain implementation of ISO C library routine.
  *
- * It's written in old-style C for maximal portability.
- * However, since I'm used to prototypes, I've included them too.
+ * If you can't do prototypes, get GCC.
  *
- * If you want stuff in the System V ascftime routine, add the SYSV_EXT define.
+ * The C99 standard now specifies just about all of the formats
+ * that were additional in the earlier versions of this file.
+ *
  * For extensions from SunOS, add SUNOS_EXT.
- * For stuff needed to implement the P1003.2 date command, add POSIX2_DATE.
+ * For extensions from HP/UX, add HPUX_EXT.
  * For VMS dates, add VMS_EXT.
- * For an RFC822 time format, add MAILHEADER_EXT.
- * For ISO week years, add ISO_DATE_EXT.
  * For complete POSIX semantics, add POSIX_SEMANTICS.
  *
- * The code for %c, %x, and %X now follows the 1003.2 specification for
- * the POSIX locale.
+ * The code for %c, %x, and %X follows the C99 specification for
+ * the "C" locale.
+ *
  * This version ignores LOCALE information.
  * It also doesn't worry about multi-byte characters.
  * So there.
@@ -34,25 +34,27 @@
  * Updated January, 1996
  * Updated July, 1997
  * Updated October, 1999
+ * Updated September, 2000
  *
- * Fixes from ado@elsie.nci.nih.gov
+ * Fixes from ado@elsie.nci.nih.gov,
  * February 1991, May 1992
- * Fixes from Tor Lillqvist tml@tik.vtt.fi
- * May, 1993
- * Further fixes from ado@elsie.nci.nih.gov
+ * Fixes from Tor Lillqvist tml@tik.vtt.fi,
+ * May 1993
+ * Further fixes from ado@elsie.nci.nih.gov,
  * February 1994
- * %z code from chip@chinacat.unicom.com
+ * %z code from chip@chinacat.unicom.com,
  * Applied September 1995
  * %V code fixed (again) and %G, %g added,
  * January 1996
- * %v code fixed, better configuration
+ * %v code fixed, better configuration,
  * July 1997
+ * Moved to C99 specification.
+ * September 2000
  */
 
 #ifndef GAWK
 #include <stdio.h>
 #include <ctype.h>
-#include <string.h>
 #include <time.h>
 #endif
 #if defined(TM_IN_SYS_TIME) || ! defined(GAWK)
@@ -60,61 +62,22 @@
 #include <sys/time.h>
 #endif
 
+#include <stdlib.h>
+#include <string.h>
+
 /* defaults: season to taste */
-#define SYSV_EXT	1	/* stuff in System V ascftime routine */
 #define SUNOS_EXT	1	/* stuff in SunOS strftime routine */
-#define POSIX2_DATE	1	/* stuff in Posix 1003.2 date command */
 #define VMS_EXT		1	/* include %v for VMS date format */
-#define MAILHEADER_EXT	1	/* add %z for HHMM format */
-#define ISO_DATE_EXT	1	/* %G and %g for year of ISO week */
-#define HPUX_EXT	1	/* stuff in HP-UX date command */
+#define HPUX_EXT	1	/* non-conflicting stuff in HP-UX date */
 #ifndef GAWK
 #define POSIX_SEMANTICS	1	/* call tzset() if TZ changes */
 #endif
 
-#if defined(ISO_DATE_EXT)
-#if ! defined(POSIX2_DATE)
-#define POSIX2_DATE	1
-#endif
-#endif
-
-#if defined(POSIX2_DATE)
-#if ! defined(SYSV_EXT)
-#define SYSV_EXT	1
-#endif
-#if ! defined(SUNOS_EXT)
-#define SUNOS_EXT	1
-#endif
-#endif
-
-#if defined(POSIX2_DATE)
-#define adddecl(stuff)	stuff
-#else
-#define adddecl(stuff)
-#endif
-
 #undef strchr	/* avoid AIX weirdness */
 
-#ifndef __STDC__
-#define const	/**/
-extern void tzset();
-static int weeknumber();
-adddecl(static int iso8601wknum();)
-#else
 extern void tzset(void);
 static int weeknumber(const struct tm *timeptr, int firstweekday);
-adddecl(static int iso8601wknum(const struct tm *timeptr);)
-#endif
-
-#ifdef STDC_HEADERS
-#include <stdlib.h>
-#include <string.h>
-#else
-extern void *malloc();
-extern void *realloc();
-extern char *getenv();
-extern char *strchr();
-#endif
+static int iso8601wknum(const struct tm *timeptr);
 
 #ifdef __GNUC__
 #define inline	__inline__
@@ -138,14 +101,8 @@ extern int timezone, altzone;
 
 /* min --- return minimum of two numbers */
 
-#ifndef __STDC__
-static inline int
-min(a, b)
-int a, b;
-#else
 static inline int
 min(int a, int b)
-#endif
 {
 	return (a < b ? a : b);
 }
@@ -154,31 +111,16 @@ min(int a, int b)
 
 /* max --- return maximum of two numbers */
 
-#ifndef __STDC__
-static inline int
-max(a, b)
-int a, b;
-#else
 static inline int
 max(int a, int b)
-#endif
 {
 	return (a > b ? a : b);
 }
 
 /* strftime --- produce formatted time */
 
-#ifndef __STDC__
-size_t
-strftime(s, maxsize, format, timeptr)
-char *s;
-size_t maxsize;
-const char *format;
-const struct tm *timeptr;
-#else
 size_t
 strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
-#endif
 {
 	char *endp = s + maxsize;
 	char *start = s;
@@ -293,19 +235,14 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 				strcpy(tbuf, days_l[timeptr->tm_wday]);
 			break;
 
-#ifdef SYSV_EXT
-		case 'h':	/* abbreviated month name */
-#endif
 		case 'b':	/* abbreviated month name */
+		short_month:
 			if (timeptr->tm_mon < 0 || timeptr->tm_mon > 11)
 				strcpy(tbuf, "?");
 			else
 				strcpy(tbuf, months_a[timeptr->tm_mon]);
 			break;
 
-#ifdef HPUX_EXT
-		case 'F':
-#endif
 		case 'B':	/* full month name */
 			if (timeptr->tm_mon < 0 || timeptr->tm_mon > 11)
 				strcpy(tbuf, "?");
@@ -314,13 +251,69 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 			break;
 
 		case 'c':	/* appropriate date and time representation */
-			strftime(tbuf, sizeof tbuf, "%a %b %e %H:%M:%S %Y", timeptr);
+			/*
+			 * This used to be:
+			 *
+			 * strftime(tbuf, sizeof tbuf, "%a %b %e %H:%M:%S %Y", timeptr);
+			 *
+			 * Now, per the ISO 1999 C standard, it this:
+			 */
+			strftime(tbuf, sizeof tbuf, "%A %B %d %T %Y", timeptr);
+			break;
+
+		case 'C':
+		century:
+			sprintf(tbuf, "%02d", (timeptr->tm_year + 1900) / 100);
 			break;
 
 		case 'd':	/* day of the month, 01 - 31 */
 			i = range(1, timeptr->tm_mday, 31);
 			sprintf(tbuf, "%02d", i);
 			break;
+
+		case 'D':	/* date as %m/%d/%y */
+			strftime(tbuf, sizeof tbuf, "%m/%d/%y", timeptr);
+			break;
+
+		case 'e':	/* day of month, blank padded */
+			sprintf(tbuf, "%2d", range(1, timeptr->tm_mday, 31));
+			break;
+
+		case 'E':
+			/* POSIX (now C99) locale extensions, ignored for now */
+			goto again;
+
+		case 'F':	/* ISO 8601 date representation */
+			strftime(tbuf, sizeof tbuf, "%Y-%m-%d", timeptr);
+			break;
+
+		case 'g':
+		case 'G':
+			/*
+			 * Year of ISO week.
+			 *
+			 * If it's December but the ISO week number is one,
+			 * that week is in next year.
+			 * If it's January but the ISO week number is 52 or
+			 * 53, that week is in last year.
+			 * Otherwise, it's this year.
+			 */
+			w = iso8601wknum(timeptr);
+			if (timeptr->tm_mon == 11 && w == 1)
+				y = 1900 + timeptr->tm_year + 1;
+			else if (timeptr->tm_mon == 0 && w >= 52)
+				y = 1900 + timeptr->tm_year - 1;
+			else
+				y = 1900 + timeptr->tm_year;
+
+			if (*format == 'G')
+				sprintf(tbuf, "%d", y);
+			else
+				sprintf(tbuf, "%02d", y % 100);
+			break;
+
+		case 'h':	/* abbreviated month name */
+			goto short_month;
 
 		case 'H':	/* hour, 24-hour clock, 00 - 23 */
 			i = range(0, timeptr->tm_hour, 23);
@@ -350,20 +343,14 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 			sprintf(tbuf, "%02d", i);
 			break;
 
-#ifdef HPUX_EXT
-		case 'N':	/* Emperor/Era name */
-			/* this is essentially the same as the century */
-			goto century;	/* %C */
+		case 'n':	/* same as \n */
+			tbuf[0] = '\n';
+			tbuf[1] = '\0';
+			break;
 
-		case 'o':	/* Emperor/Era year */
-			goto year;	/* %y */
-
-#ifndef POSIX2_DATE
-		case 'E':	/* Combined Emporer/Era name and year */
-			goto fullyear;	/* %Y */
-
-#endif /* POSIX2_DATE */
-#endif /* HPUX_EXT */
+		case 'O':
+			/* POSIX (now C99) locale extensions, ignored for now */
+			goto again;
 
 		case 'p':	/* am or pm based on 12-hour clock */
 			i = range(0, timeptr->tm_hour, 23);
@@ -373,13 +360,52 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 				strcpy(tbuf, ampm[1]);
 			break;
 
+		case 'r':	/* time as %I:%M:%S %p */
+			strftime(tbuf, sizeof tbuf, "%I:%M:%S %p", timeptr);
+			break;
+
+		case 'R':	/* time as %H:%M */
+			strftime(tbuf, sizeof tbuf, "%H:%M", timeptr);
+			break;
+
+#ifdef HAVE_MKTIME
+		case 's':	/* time as seconds since the Epoch */
+		{
+			struct tm non_const_timeptr;
+
+			non_const_timeptr = *timeptr;
+			sprintf(tbuf, "%ld", mktime(& non_const_timeptr));
+			break;
+		}
+#endif /* HAVE_MKTIME */
+
 		case 'S':	/* second, 00 - 60 */
 			i = range(0, timeptr->tm_sec, 60);
 			sprintf(tbuf, "%02d", i);
 			break;
 
+		case 't':	/* same as \t */
+			tbuf[0] = '\t';
+			tbuf[1] = '\0';
+			break;
+
+		case 'T':	/* time as %H:%M:%S */
+		the_time:
+			strftime(tbuf, sizeof tbuf, "%H:%M:%S", timeptr);
+			break;
+
+		case 'u':
+		/* ISO 8601: Weekday as a decimal number [1 (Monday) - 7] */
+			sprintf(tbuf, "%d", timeptr->tm_wday == 0 ? 7 :
+					timeptr->tm_wday);
+			break;
+
 		case 'U':	/* week of year, Sunday is first day of week */
 			sprintf(tbuf, "%02d", weeknumber(timeptr, 0));
+			break;
+
+		case 'V':	/* week of year according ISO 8601 */
+			sprintf(tbuf, "%02d", iso8601wknum(timeptr));
 			break;
 
 		case 'w':	/* weekday, Sunday == 0, 0 - 6 */
@@ -392,11 +418,11 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 			break;
 
 		case 'x':	/* appropriate date representation */
-			strftime(tbuf, sizeof tbuf, "%m/%d/%y", timeptr);
+			strftime(tbuf, sizeof tbuf, "%A %B %d %Y", timeptr);
 			break;
 
 		case 'X':	/* appropriate time representation */
-			strftime(tbuf, sizeof tbuf, "%H:%M:%S", timeptr);
+			goto the_time;
 			break;
 
 		case 'y':	/* year without a century, 00 - 99 */
@@ -410,7 +436,6 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 			sprintf(tbuf, "%d", 1900 + timeptr->tm_year);
 			break;
 
-#ifdef MAILHEADER_EXT
 		/*
 		 * From: Chip Rosenthal <chip@chinacat.unicom.com>
 		 * Date: Sun, 19 Mar 1995 00:33:29 -0600 (CST)
@@ -460,11 +485,7 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 			}
 			sprintf(tbuf+1, "%02d%02d", off/60, off%60);
 			break;
-#endif /* MAILHEADER_EXT */
 
-#if defined(HPUX_EXT) && ! defined(MAILHEADER_EXT)
-		case 'z':
-#endif
 		case 'Z':	/* time zone name or abbrevation */
 #ifdef HAVE_TZNAME
 			i = (daylight && timeptr->tm_isdst > 0); /* 0 or 1 */
@@ -484,38 +505,6 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 #endif /* HAVE_TZNAME */
 			break;
 
-#ifdef SYSV_EXT
-		case 'n':	/* same as \n */
-			tbuf[0] = '\n';
-			tbuf[1] = '\0';
-			break;
-
-		case 't':	/* same as \t */
-			tbuf[0] = '\t';
-			tbuf[1] = '\0';
-			break;
-
-		case 'D':	/* date as %m/%d/%y */
-			strftime(tbuf, sizeof tbuf, "%m/%d/%y", timeptr);
-			break;
-
-		case 'e':	/* day of month, blank padded */
-			sprintf(tbuf, "%2d", range(1, timeptr->tm_mday, 31));
-			break;
-
-		case 'r':	/* time as %I:%M:%S %p */
-			strftime(tbuf, sizeof tbuf, "%I:%M:%S %p", timeptr);
-			break;
-
-		case 'R':	/* time as %H:%M */
-			strftime(tbuf, sizeof tbuf, "%H:%M", timeptr);
-			break;
-
-		case 'T':	/* time as %H:%M:%S */
-			strftime(tbuf, sizeof tbuf, "%H:%M:%S", timeptr);
-			break;
-#endif
-
 #ifdef SUNOS_EXT
 		case 'k':	/* hour, 24-hour clock, blank pad */
 			sprintf(tbuf, "%2d", range(0, timeptr->tm_hour, 23));
@@ -531,6 +520,15 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 			break;
 #endif
 
+#ifdef HPUX_EXT
+		case 'N':	/* Emperor/Era name */
+			/* this is essentially the same as the century */
+			goto century;	/* %C */
+
+		case 'o':	/* Emperor/Era year */
+			goto year;	/* %y */
+#endif /* HPUX_EXT */
+
 
 #ifdef VMS_EXT
 		case 'v':	/* date as dd-bbb-YYYY */
@@ -544,56 +542,6 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 			break;
 #endif
 
-
-#ifdef POSIX2_DATE
-		case 'C':
-		century:
-			sprintf(tbuf, "%02d", (timeptr->tm_year + 1900) / 100);
-			break;
-
-
-		case 'E':
-		case 'O':
-			/* POSIX locale extensions, ignored for now */
-			goto again;
-
-		case 'V':	/* week of year according ISO 8601 */
-			sprintf(tbuf, "%02d", iso8601wknum(timeptr));
-			break;
-
-		case 'u':
-		/* ISO 8601: Weekday as a decimal number [1 (Monday) - 7] */
-			sprintf(tbuf, "%d", timeptr->tm_wday == 0 ? 7 :
-					timeptr->tm_wday);
-			break;
-#endif	/* POSIX2_DATE */
-
-#ifdef ISO_DATE_EXT
-		case 'G':
-		case 'g':
-			/*
-			 * Year of ISO week.
-			 *
-			 * If it's December but the ISO week number is one,
-			 * that week is in next year.
-			 * If it's January but the ISO week number is 52 or
-			 * 53, that week is in last year.
-			 * Otherwise, it's this year.
-			 */
-			w = iso8601wknum(timeptr);
-			if (timeptr->tm_mon == 11 && w == 1)
-				y = 1900 + timeptr->tm_year + 1;
-			else if (timeptr->tm_mon == 0 && w >= 52)
-				y = 1900 + timeptr->tm_year - 1;
-			else
-				y = 1900 + timeptr->tm_year;
-
-			if (*format == 'G')
-				sprintf(tbuf, "%d", y);
-			else
-				sprintf(tbuf, "%02d", y % 100);
-			break;
-#endif /* ISO_DATE_EXT */
 		default:
 			tbuf[0] = '%';
 			tbuf[1] = *format;
@@ -619,30 +567,17 @@ out:
 
 /* isleap --- is a year a leap year? */
 
-#ifndef __STDC__
-static int
-isleap(year)
-int year;
-#else
 static int
 isleap(int year)
-#endif
 {
 	return ((year % 4 == 0 && year % 100 != 0) || year % 400 == 0);
 }
 
 
-#ifdef POSIX2_DATE
 /* iso8601wknum --- compute week number according to ISO 8601 */
 
-#ifndef __STDC__
-static int
-iso8601wknum(timeptr)
-const struct tm *timeptr;
-#else
 static int
 iso8601wknum(const struct tm *timeptr)
-#endif
 {
 	/*
 	 * From 1003.2:
@@ -747,21 +682,13 @@ iso8601wknum(const struct tm *timeptr)
 
 	return weeknum;
 }
-#endif
 
 /* weeknumber --- figure how many weeks into the year */
 
 /* With thanks and tip of the hatlo to ado@elsie.nci.nih.gov */
 
-#ifndef __STDC__
-static int
-weeknumber(timeptr, firstweekday)
-const struct tm *timeptr;
-int firstweekday;
-#else
 static int
 weeknumber(const struct tm *timeptr, int firstweekday)
-#endif
 {
 	int wday = timeptr->tm_wday;
 	int ret;

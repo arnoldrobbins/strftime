@@ -1,7 +1,7 @@
-Fri Oct 22 15:41:20 IST 1999
+Wed Jul  4 19:04:39 IDT 2001
 
 This package implements the Posix 1003.2 date command, as a wrapper around
-an extended version of the ANSI strftime(3) library routine.
+an extended version of the 1999 ISO C strftime(3) library routine.
 Everything in it is public domain.
 
 Arnold Robbins				| Laundry increases exponentially
