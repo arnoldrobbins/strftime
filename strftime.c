@@ -1,0 +1,305 @@
+/*
+ * strftime.c
+ *
+ * Public-domain relatively quick-and-dirty implemenation of
+ * ANSI library routine for System V Unix systems.
+ *
+ * It's written in old-style C for maximal portability.
+ * However, since I'm used to prototypes, I've included them too.
+ *
+ * If you want stuff in the System V ascftime routine, add the SYSV_EXT define.
+ *
+ * The code for %c, %x, and %X is my best guess as to what's "appropriate".
+ * This version ignores LOCALE information.
+ * It also doesn't worry about multi-byte characters.
+ * So there.
+ *
+ * Arnold Robbins
+ * January, February, 1991
+ */
+
+#include <stdio.h>
+#include <string.h>
+#include <time.h>
+#include <sys/types.h>
+
+#ifndef __STDC__
+#define const	/**/
+#endif
+
+#ifndef __STDC__
+extern time_t mktime();
+extern void tzset();
+extern int abs();
+extern char *strchr();
+static int weeknumber();
+#else
+extern time_t mktime(struct tm *then);
+extern void tzset(void);
+extern int abs(int val);
+extern char *strchr(const char *str, int ch);
+static int weeknumber(const struct tm *timeptr, int firstweekday);
+#endif
+
+extern char *tzname[2];
+extern int daylight;
+
+#define SYSV_EXT	1	/* stuff in System V ascftime routine */
+
+/* strftime --- produce formatted time */
+
+#ifndef __STDC__
+size_t
+strftime(s, maxsize, format, timeptr)
+char *s;
+size_t maxsize;
+const char *format;
+const struct tm *timeptr;
+#else
+size_t
+strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
+#endif
+{
+	char *endp = s + maxsize;
+	char *start = s;
+	char tbuf[100];
+	int i;
+
+	/* various tables, useful in North America */
+	static char *days_a[] = {
+		"Sun", "Mon", "Tue", "Wed",
+		"Thu", "Fri", "Sat",
+	};
+	static char *days_l[] = {
+		"Sunday", "Monday", "Tuesday", "Wednesday",
+		"Thursday", "Friday", "Saturday",
+	};
+	static char *months_a[] = {
+		"Jan", "Feb", "Mar", "Apr", "May", "Jun",
+		"Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+	};
+	static char *months_l[] = {
+		"January", "February", "March", "April",
+		"May", "June", "July", "August", "September",
+		"October", "November", "December",
+	};
+	static char *ampm[] = { "AM", "PM", };
+
+	if (s == NULL || format == NULL || timeptr == NULL || maxsize == 0)
+		return 0;
+
+	if (strchr(format, '%') == NULL && strlen(format) + 1 >= maxsize)
+		return 0;
+
+	tzset();
+
+	for (; *format && s < endp - 1; format++) {
+		tbuf[0] = '\0';
+		if (*format != '%') {
+			*s++ = *format;
+			continue;
+		}
+		switch (*++format) {
+		case '\0':
+			*s++ = '%';
+			goto out;
+
+		case '%':
+			*s++ = '%';
+			continue;
+
+		case 'a':	/* abbreviated weekday name */
+			strcpy(tbuf, days_a[timeptr->tm_wday]);
+			break;
+
+		case 'A':	/* full weekday name */
+			strcpy(tbuf, days_l[timeptr->tm_wday]);
+			break;
+
+#ifdef SYSV_EXT
+		case 'h':	/* abbreviated month name */
+#endif
+		case 'b':	/* abbreviated month name */
+			strcpy(tbuf, months_a[timeptr->tm_mon]);
+			break;
+
+		case 'B':	/* full month name */
+			strcpy(tbuf, months_l[timeptr->tm_mon]);
+			break;
+
+		case 'c':	/* appropriate date and time representation */
+			sprintf(tbuf, "%s %s %2d %02d:%02d:%02d %d",
+				days_a[timeptr->tm_wday],
+				months_a[timeptr->tm_mon],
+				timeptr->tm_mday,
+				timeptr->tm_hour,
+				timeptr->tm_min,
+				timeptr->tm_sec,
+				timeptr->tm_year + 1900);
+			break;
+
+		case 'd':	/* day of the month, 01 - 31 */
+			sprintf(tbuf, "%02d", timeptr->tm_mday);
+			break;
+
+		case 'H':	/* hour, 24-hour clock, 00 - 23 */
+			sprintf(tbuf, "%02d", timeptr->tm_hour);
+			break;
+
+		case 'I':	/* hour, 12-hour clock, 01 - 12 */
+			i = timeptr->tm_hour;
+			if (i == 0)
+				i = 12;
+			else if (i > 12)
+				i -= 12;
+			sprintf(tbuf, "%02d", i);
+			break;
+
+		case 'j':	/* day of the year, 001 - 366 */
+			sprintf(tbuf, "%03d", timeptr->tm_yday + 1);
+			break;
+
+		case 'm':	/* month, 01 - 12 */
+			sprintf(tbuf, "%02d", timeptr->tm_mon + 1);
+			break;
+
+		case 'M':	/* minute, 00 - 59 */
+			sprintf(tbuf, "%02d", timeptr->tm_min);
+			break;
+
+		case 'p':	/* am or pm based on 12-hour clock */
+			if (timeptr->tm_hour < 12)
+				strcpy(tbuf, ampm[0]);
+			else
+				strcpy(tbuf, ampm[1]);
+			break;
+
+		case 'S':	/* second, 00 - 61 */
+			sprintf(tbuf, "%02d", timeptr->tm_sec);
+			break;
+
+		case 'U':	/* week of year, Sunday is first day of week */
+			sprintf(tbuf, "%d", weeknumber(timeptr, 0));
+			break;
+
+		case 'w':	/* weekday, Sunday == 0, 0 - 6 */
+			sprintf(tbuf, "%d", timeptr->tm_wday);
+			break;
+
+		case 'W':	/* week of year, Monday is first day of week */
+			sprintf(tbuf, "%d", weeknumber(timeptr, 1));
+			break;
+
+		case 'x':	/* appropriate date representation */
+			sprintf(tbuf, "%s %s %2d %d",
+				days_a[timeptr->tm_wday],
+				months_a[timeptr->tm_mon],
+				timeptr->tm_mday,
+				timeptr->tm_year + 1900);
+			break;
+
+		case 'X':	/* appropriate time representation */
+			sprintf(tbuf, "%02d:%02d:%02d",
+				timeptr->tm_hour,
+				timeptr->tm_min,
+				timeptr->tm_sec);
+			break;
+
+		case 'y':	/* year without a century, 00 - 99 */
+			i = timeptr->tm_year % 100;
+			sprintf(tbuf, "%d", i);
+			break;
+
+		case 'Y':	/* year with century */
+			sprintf(tbuf, "%d", 1900 + timeptr->tm_year);
+			break;
+
+		case 'Z':	/* time zone name or abbrevation */
+			i = 0;
+			if (daylight && timeptr->tm_isdst)
+				i = 1;
+			strcpy(tbuf, tzname[i]);
+			break;
+
+#ifdef SYSV_EXT
+		case 'n':	/* same as \n */
+			tbuf[0] = '\n';
+			tbuf[1] = '\0';
+			break;
+
+		case 't':	/* same as \t */
+			tbuf[0] = '\t';
+			tbuf[1] = '\0';
+			break;
+
+		case 'D':	/* date as %m/%d/%y */
+			strftime(tbuf, sizeof tbuf, "%m/%d/%y", timeptr);
+			break;
+
+		case 'e':	/* day of month, blank padded */
+			sprintf(tbuf, "%2d", timeptr->tm_mday);
+			break;
+
+		case 'r':	/* time as %I:%M:%S %p */
+			strftime(tbuf, sizeof tbuf, "%I:%M:%S %p", timeptr);
+			break;
+
+		case 'R':	/* time as %H:%M */
+			strftime(tbuf, sizeof tbuf, "%H:%M", timeptr);
+			break;
+
+		case 'T':	/* time as %H:%M:%S */
+			strftime(tbuf, sizeof tbuf, "%H:%M:%S", timeptr);
+			break;
+#endif
+
+		default:
+			tbuf[0] = '%';
+			tbuf[1] = *format;
+			tbuf[2] = '\0';
+			break;
+		}
+		i = strlen(tbuf);
+		if (i)
+			if (s + i < endp - 1) {
+				strcpy(s, tbuf);
+				s += i;
+			} else
+				return 0;
+	}
+out:
+	if (s < endp && *format == '\0') {
+		*s = '\0';
+		return (s - start);
+	} else
+		return 0;
+}
+
+/* weeknumber --- figure how many weeks into the year */
+
+#ifndef __STDC__
+static int
+weeknumber(timeptr, firstweekday)
+const struct tm *timeptr;
+int firstweekday;
+#else
+static int
+weeknumber(const struct tm *timeptr, int firstweekday)
+#endif
+{
+	struct tm t1;
+	time_t then;
+	long ydays;
+
+	/* find out what day of the week january 1 was */
+	t1 = *timeptr;
+	t1.tm_yday = 0;
+	t1.tm_mon = 0;
+	t1.tm_mday = 1;
+	then = mktime(& t1);
+	t1 = *localtime(& then);
+
+	/* use that info to normalize the week count */
+	ydays = timeptr->tm_yday + t1.tm_wday + firstweekday - 1;
+	return ydays / 7;
+}
