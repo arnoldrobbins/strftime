@@ -155,6 +155,11 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 	static int savetzlen = 0;
 	char *tz;
 #endif /* POSIX_SEMANTICS */
+#ifndef HAVE_TM_ZONE
+	extern char *timezone();
+	struct timeval tv;
+	struct timezone zone;
+#endif /* HAVE_TM_ZONE */
 
 	/* various tables, useful in North America */
 	static const char *days_a[] = {
@@ -364,7 +369,13 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 			i = (daylight && timeptr->tm_isdst);	/* 0 or 1 */
 			strcpy(tbuf, tzname[i]);
 #else
+#ifdef HAVE_TM_ZONE
 			strcpy(tbuf, timeptr->tm_zone);
+#else
+			gettimeofday(& tv, & zone);
+			strcpy(tbuf, timezone(zone.tz_minuteswest,
+						timeptr->tm_isdst));
+#endif
 #endif
 			break;
 
@@ -486,6 +497,21 @@ out:
 		return 0;
 }
 
+/* isleap --- is a year a leap year? */
+
+#ifndef __STDC__
+static int
+isleap(year)
+int year;
+#else
+static int
+isleap(int year)
+#endif
+{
+	return ((year % 4 == 0 && year % 100 != 0) || year % 400 == 0);
+}
+
+
 #ifdef POSIX2_DATE
 /* iso8601wknum --- compute week number according to ISO 8601 */
 
@@ -502,11 +528,14 @@ iso8601wknum(const struct tm *timeptr)
 	 * From 1003.2:
 	 *	If the week (Monday to Sunday) containing January 1
 	 *	has four or more days in the new year, then it is week 1;
-	 *	otherwise it is week 53 of the previous year, and the
-	 *	next week is week 1.
+	 *	otherwise it is the highest numbered week of the previous
+	 *	(52 or 53) year, and the next week is week 1.
 	 *
 	 * ADR: This means if Jan 1 was Monday through Thursday,
-	 *	it was week 1, otherwise week 53.
+	 *	it was week 1, otherwise week 52 or 53.
+	 *
+	 * XPG4 erroneously included POSIX.2 rationale text in the
+	 * main body of the standard. Thus it requires week 53.
 	 */
 
 	int weeknum, jan1day, diff;
@@ -533,7 +562,7 @@ iso8601wknum(const struct tm *timeptr)
 
 	/*
 	 * If Jan 1 was a Monday through Thursday, it was in
-	 * week 1.  Otherwise it was last year's week 53, which is
+	 * week 1.  Otherwise it was last year's highest week, which is
 	 * this year's week 0.
 	 *
 	 * What does that mean?
@@ -542,7 +571,7 @@ iso8601wknum(const struct tm *timeptr)
 	 * If it was Tuesday through Thursday, the weeknumber is one
 	 *	less than it should be, so we add one.
 	 * Otherwise, Friday, Saturday or Sunday, the week number is
-	 * OK, but if it is 0, it needs to be 53.
+	 * OK, but if it is 0, it needs to be 52 or 53.
 	 */
 	switch (jan1day) {
 	case 1:		/* Monday */
@@ -555,8 +584,22 @@ iso8601wknum(const struct tm *timeptr)
 	case 5:		/* Friday */
 	case 6:		/* Saturday */
 	case 0:		/* Sunday */
-		if (weeknum == 0)
+		if (weeknum == 0) {
+#ifdef USE_BROKEN_XPG4
+			/* XPG4 (as of March 1994) says 53 unconditionally */
 			weeknum = 53;
+#else
+			/* get week number of last week of last year */
+			struct tm dec31ly;	/* 12/31 last year */
+			dec31ly = *timeptr;
+			dec31ly.tm_year--;
+			dec31ly.tm_mon = 11;
+			dec31ly.tm_mday = 31;
+			dec31ly.tm_wday = (jan1day == 0) ? 6 : jan1day - 1;
+			dec31ly.tm_yday = 364 + isleap(dec31ly.tm_year + 1900);
+			weeknum = iso8601wknum(& dec31ly);
+#endif
+		}
 		break;
 	}
 	return weeknum;
