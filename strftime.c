@@ -24,6 +24,7 @@
  * January, February, March, 1991
  * Updated March, April 1992
  * Updated April, 1993
+ * Updated February, 1994
  *
  * Fixes from ado@elsie.nci.nih.gov
  * February 1991, May 1992
@@ -39,10 +40,10 @@
 #include <string.h>
 #include <time.h>
 #endif
+#include <sys/types.h>
 #if defined(TM_IN_SYS_TIME) || ! defined(GAWK)
 #include <sys/time.h>
 #endif
-#include <sys/types.h>
 
 /* defaults: season to taste */
 #define SYSV_EXT	1	/* stuff in System V ascftime routine */
@@ -508,10 +509,10 @@ iso8601wknum(const struct tm *timeptr)
 	 *	it was week 1, otherwise week 53.
 	 */
 
-	int simple_wknum, jan1day, diff, ret;
+	int weeknum, jan1day, diff;
 
 	/* get week number, Monday as first day of the week */
-	simple_wknum = weeknumber(timeptr, 1) + 1;
+	weeknum = weeknumber(timeptr, 1);
 
 	/*
 	 * With thanks and tip of the hatlo to tml@tik.vtt.fi
@@ -534,15 +535,31 @@ iso8601wknum(const struct tm *timeptr)
 	 * If Jan 1 was a Monday through Thursday, it was in
 	 * week 1.  Otherwise it was last year's week 53, which is
 	 * this year's week 0.
+	 *
+	 * What does that mean?
+	 * If Jan 1 was Monday, the week number is exactly right, it can
+	 *	never be 0.
+	 * If it was Tuesday through Thursday, the weeknumber is one
+	 *	less than it should be, so we add one.
+	 * Otherwise, Friday, Saturday or Sunday, the week number is
+	 * OK, but if it is 0, it needs to be 53.
 	 */
-	if (jan1day >= 1 && jan1day <= 4)
-		diff = 0;
-	else
-		diff = 1;
-	ret = simple_wknum - diff;
-	if (ret == 0)	/* we're in the first week of the year */
-		ret = 53;
-	return ret;
+	switch (jan1day) {
+	case 1:		/* Monday */
+		break;
+	case 2:		/* Tuesday */
+	case 3:		/* Wednedsday */
+	case 4:		/* Thursday */
+		weeknum++;
+		break;
+	case 5:		/* Friday */
+	case 6:		/* Saturday */
+	case 0:		/* Sunday */
+		if (weeknum == 0)
+			weeknum = 53;
+		break;
+	}
+	return weeknum;
 }
 #endif
 
@@ -560,11 +577,19 @@ static int
 weeknumber(const struct tm *timeptr, int firstweekday)
 #endif
 {
-	if (firstweekday == 0)
-		return (timeptr->tm_yday + 7 - timeptr->tm_wday) / 7;
-	else
-		return (timeptr->tm_yday + 7 -
-			(timeptr->tm_wday ? (timeptr->tm_wday - 1) : 6)) / 7;
+	int wday = timeptr->tm_wday;
+	int ret;
+
+	if (firstweekday == 1) {
+		if (wday == 0)	/* sunday */
+			wday = 6;
+		else
+			wday--;
+	}
+	ret = ((timeptr->tm_yday + 7 - wday) / 7);
+	if (ret < 0)
+		ret = 0;
+	return ret;
 }
 
 #if 0
