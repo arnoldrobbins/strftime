@@ -1,6 +1,6 @@
-Mon Mar 23 12:00:31 EST 1992
+Thu May  7 20:57:16 EDT 1992
 
-This package implements the Posix 1003.2 Draft 11 date command, as a
+This package implements the Posix 1003.2 draft 11.3 date command, as a
 wrapper around an extended version of the ANSI strftime(3) library
 routine.  Everything in it is public domain.
 

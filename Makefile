@@ -10,3 +10,7 @@ date: $(OBJS)
 date.o: date.c
 
 strftime.o: strftime.c
+
+clean:
+	rm -f *.o *~ *.BAK *.CKP #*#
+	rm -f date

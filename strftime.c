@@ -16,29 +16,53 @@
  * It also doesn't worry about multi-byte characters.
  * So there.
  *
+ * This file is also shipped with GAWK (GNU Awk), gawk specific bits of
+ * code are included if GAWK is defined.
+ *
  * Arnold Robbins
  * January, February, March, 1991
- * Updated March 1992
+ * Updated March, April 1992
  *
  * Fixes from ado@elsie.nci.nih.gov
- * February 1991
+ * February 1991, May 1992
  */
 
+#ifndef GAWK
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
 #include <time.h>
 #include <sys/types.h>
+#endif
+
+/* defaults: season to taste */
+#define SYSV_EXT	1	/* stuff in System V ascftime routine */
+#define POSIX2_DATE	1	/* stuff in Posix 1003.2 date command */
+#define VMS_EXT		1	/* include %v for VMS date format */
+#ifndef GAWK
+#define POSIX_SEMANTICS	1	/* call tzset() if TZ changes */
+#endif
+#define	TZNAME_MISSING	1	/* needed on ultrix and maybe others */
+
+#if defined(POSIX2_DATE) && ! defined(SYSV_EXT)
+#define SYSV_EXT	1
+#endif
+
+#if defined(POSIX2_DATE)
+#define adddecl(stuff)	stuff
+#else
+#define adddecl(stuff)
+#endif
 
 #ifndef __STDC__
 #define const	/**/
-
 extern void *malloc();
 extern void *realloc();
 extern void tzset();
 extern char *strchr();
 extern char *getenv();
 static int weeknumber();
+adddecl(static int iso8601wknum();)
 #else
 extern void *malloc(unsigned count);
 extern void *realloc(void *ptr, unsigned count);
@@ -46,6 +70,7 @@ extern void tzset(void);
 extern char *strchr(const char *str, int ch);
 extern char *getenv(const char *v);
 static int weeknumber(const struct tm *timeptr, int firstweekday);
+adddecl(static int iso8601wknum(const struct tm *timeptr);)
 #endif
 
 #ifdef __GNUC__
@@ -56,16 +81,9 @@ static int weeknumber(const struct tm *timeptr, int firstweekday);
 
 #define range(low, item, hi)	max(low, min(item, hi))
 
+#if !defined(MSDOS) && !defined(TZNAME_MISSING)
 extern char *tzname[2];
 extern int daylight;
-
-#define SYSV_EXT	1	/* stuff in System V ascftime routine */
-#define POSIX2_DATE	1	/* stuff in Posix 1003.2 date command */
-#define VMS_EXT		1	/* include %V for VMS date format */
-#define POSIX_SEMANTICS 1	/* call tzset() if TZ changes */
-
-#if defined(POSIX2_DATE) && ! defined(SYSV_EXT)
-#define SYSV_EXT	1
 #endif
 
 /* min --- return minimum of two numbers */
@@ -115,10 +133,9 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 	char tbuf[100];
 	int i;
 	static short first = 1;
-	static char *savetz = NULL, *oldtz = NULL;
+	static char *savetz = NULL;
 	static int savetzlen = 0;
 	char *tz;
-	int tzlen;
 
 	/* various tables, useful in North America */
 	static char *days_a[] = {
@@ -153,9 +170,10 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 	}
 #else	/* POSIX_SEMANTICS */
 	tz = getenv("TZ");
-	tzlen = strlen(tz);
 	if (first) {
 		if (tz != NULL) {
+			int tzlen = strlen(tz);
+
 			savetz = (char *) malloc(tzlen + 1);
 			if (savetz != NULL) {
 				savetzlen = tzlen + 1;
@@ -178,7 +196,7 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 			strcpy(savetz, tz);
 		tzset();
 	}
-#endif /* POSIX_SEMANTICS */
+#endif	/* POSIX_SEMANTICS */
 
 	for (; *format && s < endp - 1; format++) {
 		tbuf[0] = '\0';
@@ -323,9 +341,17 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 
 		case 'Z':	/* time zone name or abbrevation */
 			i = 0;
-			if (daylight && timeptr->tm_isdst)
+			if (
+#ifndef TZNAME_MISSING
+			    daylight &&
+#endif
+			    timeptr->tm_isdst)
 				i = 1;
+#ifdef TZNAME_MISSING
+			strcpy(tbuf, timeptr->tm_zone);
+#else
 			strcpy(tbuf, tzname[i]);
+#endif
 			break;
 
 #ifdef SYSV_EXT
@@ -362,7 +388,7 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 
 
 #ifdef VMS_EXT
-		case 'V':	/* date as dd-bbb-YYYY */
+		case 'v':	/* date as dd-bbb-YYYY */
 			sprintf(tbuf, "%2d-%3.3s-%4d",
 				range(1, timeptr->tm_mday, 31),
 				months_a[range(0, timeptr->tm_mon, 11)],
@@ -384,7 +410,30 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 		case 'O':
 			/* POSIX locale extensions, ignored for now */
 			goto again;
+
+		case 'V':	/* week of year according ISO 8601 */
+#if defined(GAWK) && defined(VMS_EXT)
+		{
+			extern int do_lint;
+			extern void warning();
+			static int warned = 0;
+
+			if (! warned && do_lint) {
+				warned = 1;
+				warning(
+	"conversion %%V added in P1003.2/11.3; for VMS style date, use %%v");
+			}
+		}
 #endif
+			sprintf(tbuf, "%d", iso8601wknum(timeptr));
+			break;
+
+		case 'u':
+		/* ISO 8601: Weekday as a decimal number [1 (Monday) - 7] */
+			sprintf(tbuf, "%d", timeptr->tm_wday == 0 ? 7 :
+					timeptr->tm_wday);
+			break;
+#endif	/* POSIX2_DATE */
 		default:
 			tbuf[0] = '%';
 			tbuf[1] = *format;
@@ -406,6 +455,67 @@ out:
 	} else
 		return 0;
 }
+
+#ifdef POSIX2_DATE
+/* iso8601wknum --- compute week number according to ISO 8601 */
+
+#ifndef __STDC__
+static int
+iso8601wknum(timeptr)
+const struct tm *timeptr;
+#else
+static int
+iso8601wknum(const struct tm *timeptr)
+#endif
+{
+	/*
+	 * From 1003.2 D11.3:
+	 *	If the week (Monday to Sunday) containing January 1
+	 *	has four or more days in the new year, then it is week 1;
+	 *	otherwise it is week 53 of the previous year, and the
+	 *	next week is week 1.
+	 *
+	 * ADR: This means if Jan 1 was Monday through Thursday,
+	 *	it was week 1, otherwise week 53.
+	 */
+
+	int simple_wknum, jan1day, diff, ret;
+
+	/* get week number, Monday as first day of the week */
+	simple_wknum = weeknumber(timeptr, 1) + 1;
+
+	/*
+	 * With thanks and tip of the hatlo to ado@elsie.nci.nih.gov
+	 *
+	 * What day of the week does January 1 fall on?
+	 * We know that
+	 *	(timeptr->tm_yday - jan1.tm_yday) MOD 7 ==
+	 *		(timeptr->tm_wday - jan1.tm_wday) MOD 7
+	 * and that
+	 * 	jan1.tm_yday == 1
+	 * and that
+	 * 	timeptr->tm_wday MOD 7 == timeptr->tm_wday
+	 * from which it follows that. . .
+ 	 */
+	jan1day = (timeptr->tm_yday - 1) % 7 - timeptr->tm_wday;
+	if (jan1day < 0)
+		jan1day += 7;
+
+	/*
+	 * If Jan 1 was a Monday through Thursday, it was in
+	 * week 1.  Otherwise it was last year's week 53, which is
+	 * this year's week 0.
+	 */
+	if (jan1day >= 1 && jan1day <= 4)
+		diff = 0;
+	else
+		diff = 1;
+	ret = simple_wknum - diff;
+	if (ret == 0)	/* we're in the first week of the year */
+		ret = 53;
+	return ret;
+}
+#endif
 
 /* weeknumber --- figure how many weeks into the year */
 
