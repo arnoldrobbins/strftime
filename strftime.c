@@ -10,6 +10,8 @@
  * For extensions from SunOS, add SUNOS_EXT.
  * For stuff needed to implement the P1003.2 date command, add POSIX2_DATE.
  * For VMS dates, add VMS_EXT.
+ * For a an RFC822 time format, add MAILHEADER_EXT.
+ * For ISO week years, add ISO_DATE_EXT.
  * For complete POSIX semantics, add POSIX_SEMANTICS.
  *
  * The code for %c, %x, and %X now follows the 1003.2 specification for
