@@ -636,7 +636,7 @@ iso8601wknum(const struct tm *timeptr)
 	case 1:		/* Monday */
 		break;
 	case 2:		/* Tuesday */
-	case 3:		/* Wednedsday */
+	case 3:		/* Wednesday */
 	case 4:		/* Thursday */
 		weeknum++;
 		break;
