@@ -1,8 +1,15 @@
 /*
  * date.c
  *
- * Public domain implementation of Posix 1003.2 Draft 11
+ * Public domain implementation of Posix 1003.2
  * date command.  Lets strftime() do the dirty work.
+ *
+ * Arnold Robbins
+ * arnold@skeeve.atl.ga.us
+ * April, 1991
+ *
+ * Bug fix courtesy of Chris Ritson (C.R.Ritson@newcastle.ac.uk),
+ * February, 1994.
  */
 
 #include <stdio.h>
@@ -44,6 +51,8 @@ char **argv;
 		howto = & argv[optind][1];
 
 	size = strlen(howto) * 10;
+	if (size < 26)
+		size = 26;
 	if ((buf = malloc(size)) == NULL) {
 		perror("not enough memory");
 		exit(1);
