@@ -27,8 +27,9 @@
  * Updated April, 1993
  * Updated February, 1994
  * Updated May, 1994
- * Updated January 1995
- * Updated September 1995
+ * Updated January, 1995
+ * Updated September, 1995
+ * Updated December, 1995
  *
  * Fixes from ado@elsie.nci.nih.gov
  * February 1991, May 1992
