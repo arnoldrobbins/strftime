@@ -32,8 +32,7 @@ character followed by a character that determines the behavior of the
 conversion specifier.
 All ordinary multibyte characters (including the terminating null
 character) are copied unchanged into the array.
-If copying takes place between objects that overlap the behavior is
-undefined.
+If copying takes place between objects that overlap the behavior is undefined.
 No more than
 .B maxsize
 characters are placed into the array.
@@ -119,7 +118,7 @@ is replaced by the year without century as a decimal number
 .B %Y
 is replaced by the year with century as a decimal number.
 .TP
-.B %z
+.B %Z
 is replaced by the time zone name or abbreviation, or by no characters if
 no time zone is determinable.
 .TP
@@ -191,6 +190,17 @@ environment variable.
 .LP
 It is not clear what is ``appropriate'' for the C locale; the values
 returned are a best guess on the author's part.
+.SH CAVEATS
+This implementation calls
+.IR tzset (3)
+exactly once.  If the
+.B TZ
+environment variable is changed after
+.B strftime
+has been called, then
+.IR tzset (3)
+must be called again, explicitly, in order for the
+correct timezone information to be available.
 .SH AUTHOR
 .nf
 Arnold Robbins
@@ -207,3 +217,5 @@ Fax-box:  +1 404 618 4581
 .SH ACKNOWLEDGEMENTS
 Thanks to Geoff Clare <gwc@root.co.uk> for helping debug earlier
 versions of this routine.
+Additional thanks to Arthur David Olsen <ado@elsie.nci.nih.gov>
+for some code improvements.
