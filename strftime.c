@@ -8,6 +8,8 @@
  * However, since I'm used to prototypes, I've included them too.
  *
  * If you want stuff in the System V ascftime routine, add the SYSV_EXT define.
+ * For stuff needed to implement the P1003.2 date command, add POSIX2_DATE.
+ * For complete POSIX semantics, add POSIX_SEMANTICS.
  *
  * The code for %c, %x, and %X is my best guess as to what's "appropriate".
  * This version ignores LOCALE information.
@@ -15,35 +17,84 @@
  * So there.
  *
  * Arnold Robbins
- * January, February, 1991
+ * January, February, March, 1991
+ * Updated March 1992
  *
  * Fixes from ado@elsie.nci.nih.gov
  * February 1991
  */
 
 #include <stdio.h>
+#include <ctype.h>
 #include <string.h>
 #include <time.h>
 #include <sys/types.h>
 
 #ifndef __STDC__
 #define const	/**/
-#endif
 
-#ifndef __STDC__
+extern void *malloc();
+extern void *realloc();
 extern void tzset();
 extern char *strchr();
+extern char *getenv();
 static int weeknumber();
 #else
+extern void *malloc(unsigned count);
+extern void *realloc(void *ptr, unsigned count);
 extern void tzset(void);
 extern char *strchr(const char *str, int ch);
+extern char *getenv(const char *v);
 static int weeknumber(const struct tm *timeptr, int firstweekday);
 #endif
+
+#ifdef __GNUC__
+#define inline	__inline__
+#else
+#define inline	/**/
+#endif
+
+#define range(low, item, hi)	max(low, min(item, hi))
 
 extern char *tzname[2];
 extern int daylight;
 
 #define SYSV_EXT	1	/* stuff in System V ascftime routine */
+#define POSIX2_DATE	1	/* stuff in Posix 1003.2 date command */
+#define VMS_EXT		1	/* include %V for VMS date format */
+#define POSIX_SEMANTICS 1	/* call tzset() if TZ changes */
+
+#if defined(POSIX2_DATE) && ! defined(SYSV_EXT)
+#define SYSV_EXT	1
+#endif
+
+/* min --- return minimum of two numbers */
+
+#ifndef __STDC__
+static inline int
+min(a, b)
+int a, b;
+#else
+static inline int
+min(int a, int b)
+#endif
+{
+	return (a < b ? a : b);
+}
+
+/* max --- return maximum of two numbers */
+
+#ifndef __STDC__
+static inline int
+max(a, b)
+int a, b;
+#else
+static inline int
+max(int a, int b)
+#endif
+{
+	return (a > b ? a : b);
+}
 
 /* strftime --- produce formatted time */
 
@@ -64,6 +115,10 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 	char tbuf[100];
 	int i;
 	static short first = 1;
+	static char *savetz = NULL, *oldtz = NULL;
+	static int savetzlen = 0;
+	char *tz;
+	int tzlen;
 
 	/* various tables, useful in North America */
 	static char *days_a[] = {
@@ -91,10 +146,39 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 	if (strchr(format, '%') == NULL && strlen(format) + 1 >= maxsize)
 		return 0;
 
+#ifndef POSIX_SEMANTICS
 	if (first) {
 		tzset();
 		first = 0;
 	}
+#else	/* POSIX_SEMANTICS */
+	tz = getenv("TZ");
+	tzlen = strlen(tz);
+	if (first) {
+		if (tz != NULL) {
+			savetz = (char *) malloc(tzlen + 1);
+			if (savetz != NULL) {
+				savetzlen = tzlen + 1;
+				strcpy(savetz, tz);
+			}
+		}
+		tzset();
+		first = 0;
+	}
+	/* if we have a saved TZ, and it is different, recapture and reset */
+	if (tz && savetz && (tz[0] != savetz[0] || strcmp(tz, savetz) != 0)) {
+		i = strlen(tz) + 1;
+		if (i > savetzlen) {
+			savetz = (char *) realloc(savetz, i);
+			if (savetz) {
+				savetzlen = i;
+				strcpy(savetz, tz);
+			}
+		} else
+			strcpy(savetz, tz);
+		tzset();
+	}
+#endif /* POSIX_SEMANTICS */
 
 	for (; *format && s < endp - 1; format++) {
 		tbuf[0] = '\0';
@@ -102,6 +186,7 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 			*s++ = *format;
 			continue;
 		}
+	again:
 		switch (*++format) {
 		case '\0':
 			*s++ = '%';
@@ -144,25 +229,27 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 
 		case 'c':	/* appropriate date and time representation */
 			sprintf(tbuf, "%s %s %2d %02d:%02d:%02d %d",
-				days_a[timeptr->tm_wday],
-				months_a[timeptr->tm_mon],
-				timeptr->tm_mday,
-				timeptr->tm_hour,
-				timeptr->tm_min,
-				timeptr->tm_sec,
+				days_a[range(0, timeptr->tm_wday, 6)],
+				months_a[range(0, timeptr->tm_mon, 11)],
+				range(1, timeptr->tm_mday, 31),
+				range(0, timeptr->tm_hour, 23),
+				range(0, timeptr->tm_min, 59),
+				range(0, timeptr->tm_sec, 61),
 				timeptr->tm_year + 1900);
 			break;
 
 		case 'd':	/* day of the month, 01 - 31 */
-			sprintf(tbuf, "%02d", timeptr->tm_mday);
+			i = range(1, timeptr->tm_mday, 31);
+			sprintf(tbuf, "%02d", i);
 			break;
 
 		case 'H':	/* hour, 24-hour clock, 00 - 23 */
-			sprintf(tbuf, "%02d", timeptr->tm_hour);
+			i = range(0, timeptr->tm_hour, 23);
+			sprintf(tbuf, "%02d", i);
 			break;
 
 		case 'I':	/* hour, 12-hour clock, 01 - 12 */
-			i = timeptr->tm_hour;
+			i = range(0, timeptr->tm_hour, 23);
 			if (i == 0)
 				i = 12;
 			else if (i > 12)
@@ -175,22 +262,26 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 			break;
 
 		case 'm':	/* month, 01 - 12 */
-			sprintf(tbuf, "%02d", timeptr->tm_mon + 1);
+			i = range(0, timeptr->tm_mon, 11);
+			sprintf(tbuf, "%02d", i + 1);
 			break;
 
 		case 'M':	/* minute, 00 - 59 */
-			sprintf(tbuf, "%02d", timeptr->tm_min);
+			i = range(0, timeptr->tm_min, 59);
+			sprintf(tbuf, "%02d", i);
 			break;
 
 		case 'p':	/* am or pm based on 12-hour clock */
-			if (timeptr->tm_hour < 12)
+			i = range(0, timeptr->tm_hour, 23);
+			if (i < 12)
 				strcpy(tbuf, ampm[0]);
 			else
 				strcpy(tbuf, ampm[1]);
 			break;
 
 		case 'S':	/* second, 00 - 61 */
-			sprintf(tbuf, "%02d", timeptr->tm_sec);
+			i = range(0, timeptr->tm_sec, 61);
+			sprintf(tbuf, "%02d", i);
 			break;
 
 		case 'U':	/* week of year, Sunday is first day of week */
@@ -198,7 +289,8 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 			break;
 
 		case 'w':	/* weekday, Sunday == 0, 0 - 6 */
-			sprintf(tbuf, "%d", timeptr->tm_wday);
+			i = range(0, timeptr->tm_wday, 6);
+			sprintf(tbuf, "%d", i);
 			break;
 
 		case 'W':	/* week of year, Monday is first day of week */
@@ -207,17 +299,17 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 
 		case 'x':	/* appropriate date representation */
 			sprintf(tbuf, "%s %s %2d %d",
-				days_a[timeptr->tm_wday],
-				months_a[timeptr->tm_mon],
-				timeptr->tm_mday,
+				days_a[range(0, timeptr->tm_wday, 6)],
+				months_a[range(0, timeptr->tm_mon, 11)],
+				range(1, timeptr->tm_mday, 31),
 				timeptr->tm_year + 1900);
 			break;
 
 		case 'X':	/* appropriate time representation */
 			sprintf(tbuf, "%02d:%02d:%02d",
-				timeptr->tm_hour,
-				timeptr->tm_min,
-				timeptr->tm_sec);
+				range(0, timeptr->tm_hour, 23),
+				range(0, timeptr->tm_min, 59),
+				range(0, timeptr->tm_sec, 61));
 			break;
 
 		case 'y':	/* year without a century, 00 - 99 */
@@ -252,7 +344,7 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 			break;
 
 		case 'e':	/* day of month, blank padded */
-			sprintf(tbuf, "%2d", timeptr->tm_mday);
+			sprintf(tbuf, "%2d", range(1, timeptr->tm_mday, 31));
 			break;
 
 		case 'r':	/* time as %I:%M:%S %p */
@@ -268,6 +360,31 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 			break;
 #endif
 
+
+#ifdef VMS_EXT
+		case 'V':	/* date as dd-bbb-YYYY */
+			sprintf(tbuf, "%2d-%3.3s-%4d",
+				range(1, timeptr->tm_mday, 31),
+				months_a[range(0, timeptr->tm_mon, 11)],
+				timeptr->tm_year + 1900);
+			for (i = 3; i < 6; i++)
+				if (islower(tbuf[i]))
+					tbuf[i] = toupper(tbuf[i]);
+			break;
+#endif
+
+
+#ifdef POSIX2_DATE
+		case 'C':
+			sprintf(tbuf, "%02d", (timeptr->tm_year + 1900) / 100);
+			break;
+
+
+		case 'E':
+		case 'O':
+			/* POSIX locale extensions, ignored for now */
+			goto again;
+#endif
 		default:
 			tbuf[0] = '%';
 			tbuf[1] = *format;
@@ -310,3 +427,29 @@ weeknumber(const struct tm *timeptr, int firstweekday)
 		return (timeptr->tm_yday + 7 -
 			(timeptr->tm_wday ? (timeptr->tm_wday - 1) : 6)) / 7;
 }
+
+#if 0
+/* ADR --- I'm loathe to mess with ado's code ... */
+
+Date:         Wed, 24 Apr 91 20:54:08 MDT
+From: Michal Jaegermann <audfax!emory!vm.ucs.UAlberta.CA!NTOMCZAK>
+To: arnold@audiofax.com
+
+Hi Arnold,
+in a process of fixing of strftime() in libraries on Atari ST I grabbed
+some pieces of code from your own strftime.  When doing that it came
+to mind that your weeknumber() function compiles a little bit nicer
+in the following form:
+/*
+ * firstweekday is 0 if starting in Sunday, non-zero if in Monday
+ */
+{
+    return (timeptr->tm_yday - timeptr->tm_wday +
+	    (firstweekday ? (timeptr->tm_wday ? 8 : 1) : 7)) / 7;
+}
+How nicer it depends on a compiler, of course, but always a tiny bit.
+
+   Cheers,
+   Michal
+   ntomczak@vm.ucs.ualberta.ca
+#endif

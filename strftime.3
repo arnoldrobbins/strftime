@@ -172,7 +172,7 @@ is equivalent to specifying
 .TP
 .B %R
 is equivalent to specifying
-.BR %H:%M: .
+.BR %H:%M .
 .TP
 .B %T
 is equivalent to specifying
@@ -180,6 +180,43 @@ is equivalent to specifying
 .TP
 .B %t
 is replaced with a \s-1TAB\s+1 character.
+.SH POSIX 1003.2 EXTENSIONS
+If
+.B POSIX2_DATE
+is defined, then all of the conversions available with
+.B SYSV_EXT
+are available, as well as the
+following additional conversions:
+.TP
+.B %C
+The century, as a number between 00 and 99.
+.LP
+In additon, the alternate representations
+.BR %Ec ,
+.BR %EC ,
+.BR %Ex ,
+.BR %Ey ,
+.BR %EY ,
+.BR %Od ,
+.BR %Oe ,
+.BR %OH ,
+.BR %OI ,
+.BR %Om ,
+.BR %OM ,
+.BR %OS ,
+.BR %OU ,
+.BR %Ow ,
+.BR %OW ,
+and
+.B %Oy
+are recognized, but their normal representations are used.
+.SH VMS EXTENSIONS
+If
+.B VMS_EXT
+is defined, then the following additional conversion is available:
+.TP
+.B %V
+The date in VMS format (e.g. 20-JUN-1991).
 .SH SEE ALSO
 time(2), ctime(3), localtime(3)
 .SH BUGS
@@ -201,21 +238,20 @@ has been called, then
 .IR tzset (3)
 must be called again, explicitly, in order for the
 correct timezone information to be available.
+This behavior is not POSIX-conformant.  To force POSIX semantics,
+define
+.B POSIX_SEMANTICS
+when compiling.
 .SH AUTHOR
 .nf
 Arnold Robbins
-AudioFAX, Inc.
-Suite 200
-2000 Powers Ferry Road
-Marietta, GA. 30067
-U.S.A.
-INTERNET: arnold@audiofax.com
-UUCP:     emory!audfax!arnold
-Phone:    +1 404 933 7600
-Fax-box:  +1 404 618 4581
+.sp
+INTERNET: arnold@skeeve.atl.ga.us
+UUCP:     emory!skeeve!arnold
+Phone:    +1 404 248 9324
 .fi
 .SH ACKNOWLEDGEMENTS
 Thanks to Geoff Clare <gwc@root.co.uk> for helping debug earlier
-versions of this routine.
+versions of this routine, and for advice about POSIX semantics.
 Additional thanks to Arthur David Olsen <ado@elsie.nci.nih.gov>
 for some code improvements.

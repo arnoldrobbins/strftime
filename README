@@ -1,0 +1,10 @@
+Mon Mar 23 12:00:31 EST 1992
+
+This package implements the Posix 1003.2 Draft 11 date command, as a
+wrapper around an extended version of the ANSI strftime(3) library
+routine.  Everything in it is public domain.
+
+Arnold Robbins -- The Basement Computer		| Laundry increases
+Internet: arnold@skeeve.ATL.GA.US		| exponentially in the
+UUCP:	{ gatech, emory }!skeeve!arnold		| number of children.
+Bitnet:	Forget it. Get on a real network.	|    -- Miriam Robbins

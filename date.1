@@ -1,0 +1,57 @@
+.TH DATE 1
+.SH NAME
+date \- write the date and time
+.SH SYNOPSIS
+.B date
+[
+.B \-u
+] [
+.RI + format
+]
+.SH DESCRIPTION
+.I Date
+writes the current date and time to the standard output.
+It is intended to be compliant with draft 11 of the Posix
+1003.2 Command Language and Utilities standard.
+Therefore, it is purposely
+.I not
+usable by the super-user for setting the system time.
+.LP
+.I Date
+accepts one option:
+.TP
+.B \-u
+Perform operations as if the
+.B TZ
+environment variable was set to
+.BR GMT0 .
+.LP
+If an argument to 
+.I date
+is given that begins with a ``+'',
+then the output is controlled by the contents of the rest of
+the string.  Normal text is output unmodified, while field descriptors
+in the format string are substituted for.
+.LP
+The
+.I date
+program is essentially a wrapper around
+.IR strftime (3);
+see there for a description of the available formatting options.
+.LP
+If no format string is given, or if it does not begin with a ``+'',
+then the default format of \fB"%a %b %e %H:%M:%S %Z %Y"\fR will
+be used.  This produces the traditional style of output, such as
+``Sun Mar 17 10:32:47 EST 1991''.
+.SH SEE ALSO
+time(2), strftime(3), localtime(3)
+.SH BUGS
+This version only works for the POSIX locale.
+.SH AUTHOR
+.nf
+Arnold Robbins
+.sp
+INTERNET: arnold@skeeve.atl.ga.us
+UUCP:     emory!skeeve!arnold
+Phone:    +1 404 248 9324
+.fi
