@@ -16,6 +16,9 @@
  *
  * Arnold Robbins
  * January, February, 1991
+ *
+ * Fixes from ado@elsie.nci.nih.gov
+ * February 1991
  */
 
 #include <stdio.h>
@@ -28,15 +31,11 @@
 #endif
 
 #ifndef __STDC__
-extern time_t mktime();
 extern void tzset();
-extern int abs();
 extern char *strchr();
 static int weeknumber();
 #else
-extern time_t mktime(struct tm *then);
 extern void tzset(void);
-extern int abs(int val);
 extern char *strchr(const char *str, int ch);
 static int weeknumber(const struct tm *timeptr, int firstweekday);
 #endif
@@ -64,6 +63,7 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 	char *start = s;
 	char tbuf[100];
 	int i;
+	static short first = 1;
 
 	/* various tables, useful in North America */
 	static char *days_a[] = {
@@ -91,7 +91,10 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 	if (strchr(format, '%') == NULL && strlen(format) + 1 >= maxsize)
 		return 0;
 
-	tzset();
+	if (first) {
+		tzset();
+		first = 0;
+	}
 
 	for (; *format && s < endp - 1; format++) {
 		tbuf[0] = '\0';
@@ -109,22 +112,34 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 			continue;
 
 		case 'a':	/* abbreviated weekday name */
-			strcpy(tbuf, days_a[timeptr->tm_wday]);
+			if (timeptr->tm_wday < 0 || timeptr->tm_wday > 6)
+				strcpy(tbuf, "?");
+			else
+				strcpy(tbuf, days_a[timeptr->tm_wday]);
 			break;
 
 		case 'A':	/* full weekday name */
-			strcpy(tbuf, days_l[timeptr->tm_wday]);
+			if (timeptr->tm_wday < 0 || timeptr->tm_wday > 6)
+				strcpy(tbuf, "?");
+			else
+				strcpy(tbuf, days_l[timeptr->tm_wday]);
 			break;
 
 #ifdef SYSV_EXT
 		case 'h':	/* abbreviated month name */
 #endif
 		case 'b':	/* abbreviated month name */
-			strcpy(tbuf, months_a[timeptr->tm_mon]);
+			if (timeptr->tm_mon < 0 || timeptr->tm_mon > 11)
+				strcpy(tbuf, "?");
+			else
+				strcpy(tbuf, months_a[timeptr->tm_mon]);
 			break;
 
 		case 'B':	/* full month name */
-			strcpy(tbuf, months_l[timeptr->tm_mon]);
+			if (timeptr->tm_mon < 0 || timeptr->tm_mon > 11)
+				strcpy(tbuf, "?");
+			else
+				strcpy(tbuf, months_l[timeptr->tm_mon]);
 			break;
 
 		case 'c':	/* appropriate date and time representation */
@@ -277,6 +292,8 @@ out:
 
 /* weeknumber --- figure how many weeks into the year */
 
+/* With thanks and tip of the hatlo to ado@elsie.nci.nih.gov */
+
 #ifndef __STDC__
 static int
 weeknumber(timeptr, firstweekday)
@@ -287,19 +304,9 @@ static int
 weeknumber(const struct tm *timeptr, int firstweekday)
 #endif
 {
-	struct tm t1;
-	time_t then;
-	long ydays;
-
-	/* find out what day of the week january 1 was */
-	t1 = *timeptr;
-	t1.tm_yday = 0;
-	t1.tm_mon = 0;
-	t1.tm_mday = 1;
-	then = mktime(& t1);
-	t1 = *localtime(& then);
-
-	/* use that info to normalize the week count */
-	ydays = timeptr->tm_yday + t1.tm_wday + firstweekday - 1;
-	return ydays / 7;
+	if (firstweekday == 0)
+		return (timeptr->tm_yday + 7 - timeptr->tm_wday) / 7;
+	else
+		return (timeptr->tm_yday + 7 -
+			(timeptr->tm_wday ? (timeptr->tm_wday - 1) : 6)) / 7;
 }
