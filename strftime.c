@@ -107,8 +107,10 @@ adddecl(static int iso8601wknum(const struct tm *timeptr);)
 
 #if !defined(OS2) && !defined(MSDOS) && defined(HAVE_TZNAME)
 extern char *tzname[2];
-extern int daylight;
+extern int daylight, timezone, altzone;
 #endif
+
+#undef min	/* just in case */
 
 /* min --- return minimum of two numbers */
 
@@ -123,6 +125,8 @@ min(int a, int b)
 {
 	return (a < b ? a : b);
 }
+
+#undef max	/* also, just in case */
 
 /* max --- return maximum of two numbers */
 
@@ -416,7 +420,7 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 
 		case 'Z':	/* time zone name or abbrevation */
 #ifdef HAVE_TZNAME
-			i = (daylight && timeptr->tm_isdst);	/* 0 or 1 */
+			i = (daylight && timeptr->tm_isdst > 0); /* 0 or 1 */
 			strcpy(tbuf, tzname[i]);
 #else
 #ifdef HAVE_TM_ZONE
@@ -427,7 +431,7 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 #else
 			gettimeofday(& tv, & zone);
 			strcpy(tbuf, timezone(zone.tz_minuteswest,
-						timeptr->tm_isdst));
+						timeptr->tm_isdst > 0));
 #endif /* HAVE_TM_NAME */
 #endif /* HAVE_TM_ZONE */
 #endif /* HAVE_TZNAME */
