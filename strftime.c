@@ -736,7 +736,7 @@ static char *array[] =
 	"(%%p)              locale's AM or PM based on 12-hour clock  %p",
 	"(%%r)                   time, 12-hour (same as %%I:%%M:%%S %%p)  %r",
 	"(%%u) ISO 8601: Weekday as decimal number [1 (Monday) - 7]   %u",
-	"(%%v)                                VAX date (dd-bbb-YYYY)  %v",
+	"(%%v)                                VMS date (dd-bbb-YYYY)  %v",
 	"(%%w)                       day of week (0..6, Sunday == 0)  %w",
 	"(%%x)                appropriate locale date representation  %x",
 	"(%%y)                      last two digits of year (00..99)  %y",
