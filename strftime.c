@@ -1,13 +1,14 @@
 /*
  * strftime.c
  *
- * Public-domain relatively quick-and-dirty implemenation of
+ * Public-domain relatively quick-and-dirty implementation of
  * ANSI library routine for System V Unix systems.
  *
  * It's written in old-style C for maximal portability.
  * However, since I'm used to prototypes, I've included them too.
  *
  * If you want stuff in the System V ascftime routine, add the SYSV_EXT define.
+ * For extensions from SunOS, add SUNOS_EXT.
  * For stuff needed to implement the P1003.2 date command, add POSIX2_DATE.
  * For complete POSIX semantics, add POSIX_SEMANTICS.
  *
@@ -22,6 +23,7 @@
  * Arnold Robbins
  * January, February, March, 1991
  * Updated March, April 1992
+ * Updated May, 1993
  *
  * Fixes from ado@elsie.nci.nih.gov
  * February 1991, May 1992
@@ -37,15 +39,20 @@
 
 /* defaults: season to taste */
 #define SYSV_EXT	1	/* stuff in System V ascftime routine */
+#define SUNOS_EXT	1	/* stuff in SunOS strftime routine */
 #define POSIX2_DATE	1	/* stuff in Posix 1003.2 date command */
 #define VMS_EXT		1	/* include %v for VMS date format */
 #ifndef GAWK
 #define POSIX_SEMANTICS	1	/* call tzset() if TZ changes */
 #endif
-#define	TZNAME_MISSING	1	/* needed on ultrix and maybe others */
 
-#if defined(POSIX2_DATE) && ! defined(SYSV_EXT)
+#if defined(POSIX2_DATE)
+#if ! defined(SYSV_EXT)
 #define SYSV_EXT	1
+#endif
+#if ! defined(SUNOS_EXT)
+#define SUNOS_EXT	1
+#endif
 #endif
 
 #if defined(POSIX2_DATE)
@@ -53,6 +60,8 @@
 #else
 #define adddecl(stuff)
 #endif
+
+#undef strchr	/* avoid AIX weirdness */
 
 #ifndef __STDC__
 #define const	/**/
@@ -133,9 +142,11 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 	char tbuf[100];
 	int i;
 	static short first = 1;
+#ifdef POSIX_SEMANTICS
 	static char *savetz = NULL;
 	static int savetzlen = 0;
 	char *tz;
+#endif /* POSIX_SEMANTICS */
 
 	/* various tables, useful in North America */
 	static char *days_a[] = {
@@ -383,6 +394,21 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 
 		case 'T':	/* time as %H:%M:%S */
 			strftime(tbuf, sizeof tbuf, "%H:%M:%S", timeptr);
+			break;
+#endif
+
+#ifdef SUNOS_EXT
+		case 'k':	/* hour, 24-hour clock, blank pad */
+			sprintf(tbuf, "%2d", range(0, timeptr->tm_hour, 23));
+			break;
+
+		case 'l':	/* hour, 12-hour clock, 1 - 12, blank pad */
+			i = range(0, timeptr->tm_hour, 23);
+			if (i == 0)
+				i = 12;
+			else if (i > 12)
+				i -= 12;
+			sprintf(tbuf, "%2d", i);
 			break;
 #endif
 
