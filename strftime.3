@@ -220,7 +220,8 @@ day of week 1) as a decimal number
 .RB ( 01 - 53 ).
 The method for determining the week number is as specified by ISO 8601
 (to wit: if the week containing January 1 has four or more days in the
-new year, then it is week 1, otherwise it is week 53 of the previous year
+new year, then it is week 1, otherwise it is the highest numbered
+week of the previous year (52 or 53)
 and the next week is week 1).
 .LP
 The text of the POSIX standard for the
