@@ -29,7 +29,7 @@
  * Updated May, 1994
  * Updated January, 1995
  * Updated September, 1995
- * Updated December, 1995
+ * Updated January, 1996
  *
  * Fixes from ado@elsie.nci.nih.gov
  * February 1991, May 1992
@@ -39,6 +39,8 @@
  * February 1994
  * %z code from chip@chinacat.unicom.com
  * Applied September 1995
+ * %V code fixed (again) and %G, %g added,
+ * January 1996
  */
 
 #ifndef GAWK
@@ -58,8 +60,15 @@
 #define POSIX2_DATE	1	/* stuff in Posix 1003.2 date command */
 #define VMS_EXT		1	/* include %v for VMS date format */
 #define MAILHEADER_EXT	1	/* add %z for HHMM format */
+#define ISO_DATE_EXT	1	/* %G and %g for year of ISO week */
 #ifndef GAWK
 #define POSIX_SEMANTICS	1	/* call tzset() if TZ changes */
+#endif
+
+#if defined(ISO_DATE_EXT)
+#if ! defined(POSIX2_DATE)
+#define POSIX2_DATE	1
+#endif
 #endif
 
 #if defined(POSIX2_DATE)
@@ -108,7 +117,12 @@ adddecl(static int iso8601wknum(const struct tm *timeptr);)
 
 #if !defined(OS2) && !defined(MSDOS) && defined(HAVE_TZNAME)
 extern char *tzname[2];
-extern int daylight, timezone, altzone;
+extern int daylight;
+#ifdef SOLARIS
+extern long timezone, altzone;
+#else
+extern int timezone, altzone;
+#endif
 #endif
 
 #undef min	/* just in case */
@@ -161,7 +175,7 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 	char *start = s;
 	auto char tbuf[100];
 	long off;
-	int i;
+	int i, w, y;
 	static short first = 1;
 #ifdef POSIX_SEMANTICS
 	static char *savetz = NULL;
@@ -511,19 +525,6 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 			goto again;
 
 		case 'V':	/* week of year according ISO 8601 */
-#if defined(GAWK) && defined(VMS_EXT)
-		{
-			extern int do_lint;
-			extern void warning();
-			static int warned = 0;
-
-			if (! warned && do_lint) {
-				warned = 1;
-				warning(
-	"conversion %%V added in P1003.2; for VMS style date, use %%v");
-			}
-		}
-#endif
 			sprintf(tbuf, "%02d", iso8601wknum(timeptr));
 			break;
 
@@ -533,6 +534,33 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 					timeptr->tm_wday);
 			break;
 #endif	/* POSIX2_DATE */
+
+#ifdef ISO_DATE_EXT
+		case 'G':
+		case 'g':
+			/*
+			 * Year of ISO week.
+			 *
+			 * If it's December but the ISO week number is one,
+			 * that week is in next year.
+			 * If it's January but the ISO week number is 52 or
+			 * 53, that week is in last year.
+			 * Otherwise, it's this year.
+			 */
+			w = iso8601wknum(timeptr);
+			if (timeptr->tm_mon == 11 && w == 1)
+				y = 1900 + timeptr->tm_year + 1;
+			else if (timeptr->tm_mon == 0 && w >= 52)
+				y = 1900 + timeptr->tm_year - 1;
+			else
+				y = 1900 + timeptr->tm_year;
+
+			if (*format == 'G')
+				sprintf(tbuf, "%d", y);
+			else
+				sprintf(tbuf, "%02d", y % 100);
+			break;
+#endif ISO_DATE_EXT
 		default:
 			tbuf[0] = '%';
 			tbuf[1] = *format;
@@ -588,7 +616,7 @@ iso8601wknum(const struct tm *timeptr)
 	 *	If the week (Monday to Sunday) containing January 1
 	 *	has four or more days in the new year, then it is week 1;
 	 *	otherwise it is the highest numbered week of the previous
-	 *	(52 or 53) year, and the next week is week 1.
+	 *	year (52 or 53), and the next week is week 1.
 	 *
 	 * ADR: This means if Jan 1 was Monday through Thursday,
 	 *	it was week 1, otherwise week 52 or 53.
@@ -661,6 +689,29 @@ iso8601wknum(const struct tm *timeptr)
 		}
 		break;
 	}
+
+	if (timeptr->tm_mon == 11) {
+		/*
+		 * The last week of the year
+		 * can be in week 1 of next year.
+		 * Sigh.
+		 *
+		 * This can only happen if
+		 *	M   T  W
+		 *	29  30 31
+		 *	30  31
+		 *	31
+		 */
+		int wday, mday;
+
+		wday = timeptr->tm_wday;
+		mday = timeptr->tm_mday;
+		if (   (wday == 1 && (mday >= 29 && mday <= 31))
+		    || (wday == 2 && (mday == 30 || mday == 31))
+		    || (wday == 3 &&  mday == 31))
+			weeknum = 1;
+	}
+
 	return weeknum;
 }
 #endif
