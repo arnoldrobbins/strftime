@@ -41,8 +41,8 @@
 #include <string.h>
 #include <time.h>
 #endif
-#include <sys/types.h>
 #if defined(TM_IN_SYS_TIME) || ! defined(GAWK)
+#include <sys/types.h>
 #include <sys/time.h>
 #endif
 
