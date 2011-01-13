@@ -33,6 +33,7 @@
  * Updated October, 1999
  * Updated September, 2000
  * Updated December, 2001
+ * Updated January, 2011
  *
  * Fixes from ado@elsie.nci.nih.gov,
  * February 1991, May 1992
@@ -90,7 +91,11 @@ extern int daylight;
 #if defined(SOLARIS) || defined(mips)
 extern long int timezone, altzone;
 #else
+#if defined(__hpux)
+extern long int timezone;
+#else
 extern int timezone, altzone;
+#endif
 #endif
 #endif
 
@@ -469,9 +474,13 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 			 * Systems with tzname[] probably have timezone as
 			 * secs west of GMT.  Convert to mins east of GMT.
 			 */
+#if defined(__hpux)
+			off = -timezone / 60;
+#else
 			/* ADR: 4 August 2001, fixed this per gazelle@interaccess.com */
 			/* off = -(daylight ? timezone : altzone) / 60; */
 			off = -(daylight ? altzone : timezone) / 60;
+#endif
 #else /* !HAVE_TZNAME */
 			off = -zone.tz_minuteswest;
 #endif /* !HAVE_TZNAME */

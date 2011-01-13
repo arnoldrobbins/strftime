@@ -10,21 +10,22 @@
  *
  * Bug fix courtesy of Chris Ritson (C.R.Ritson@newcastle.ac.uk),
  * February, 1994.
+ *
+ * Add more header files, use ANSI prototype.
+ * January, 2011.
  */
 
 #include <stdio.h>
-#include <sys/types.h>
+#include <stdlib.h>
+#include <string.h>
 #include <time.h>
+#include <sys/types.h>
 
-extern char *malloc();
 extern size_t strftime();
 extern int getopt();
 extern int optind;
 
-int
-main(argc, argv)
-int argc;
-char **argv;
+int main(int argc, char **argv)
 {
 	time_t clock;
 	struct tm *now;
