@@ -77,10 +77,12 @@ extern void tzset(void);
 static int weeknumber(const struct tm *timeptr, int firstweekday);
 static int iso8601wknum(const struct tm *timeptr);
 
+#ifndef inline
 #ifdef __GNUC__
 #define inline	__inline__
 #else
 #define inline	/**/
+#endif
 #endif
 
 #define range(low, item, hi)	max(low, min(item, hi))
@@ -455,6 +457,8 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 		 * us that muck around with various message processors.
 		 */
  		case 'z':	/* time zone offset east of GMT e.g. -0600 */
+ 			if (timeptr->tm_isdst < 0)
+ 				break;
 #ifdef HAVE_TM_NAME
 			/*
 			 * Systems with tm_name probably have tm_tzadj as
@@ -482,6 +486,7 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 			off = -(daylight ? altzone : timezone) / 60;
 #endif
 #else /* !HAVE_TZNAME */
+			gettimeofday(& tv, & zone);
 			off = -zone.tz_minuteswest;
 #endif /* !HAVE_TZNAME */
 #endif /* !HAVE_TM_ZONE */
@@ -492,7 +497,7 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 			} else {
 				tbuf[0] = '+';
 			}
-			sprintf(tbuf+1, "%02d%02d", off/60, off%60);
+			sprintf(tbuf+1, "%02ld%02ld", off/60, off%60);
 			break;
 
 		case 'Z':	/* time zone name or abbrevation */
