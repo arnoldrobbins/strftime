@@ -49,7 +49,7 @@
  * July 1997
  * Moved to C99 specification.
  * September 2000
- * Fixes from Tanaka Akira <akr@m17n.org>,
+ * Fixes from Tanaka Akira <akr@m17n.org>
  * December 2001
  */
 
@@ -90,7 +90,7 @@ static int iso8601wknum(const struct tm *timeptr);
 #if !defined(OS2) && !defined(MSDOS) && defined(HAVE_TZNAME)
 extern char *tzname[2];
 extern int daylight;
-#if defined(SOLARIS) || defined(mips)
+#if defined(SOLARIS) || defined(mips) || defined (M_UNIX)
 extern long int timezone, altzone;
 #else
 #if defined(__hpux)
@@ -482,7 +482,6 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 			off = -timezone / 60;
 #else
 			/* ADR: 4 August 2001, fixed this per gazelle@interaccess.com */
-			/* off = -(daylight ? timezone : altzone) / 60; */
 			off = -(daylight ? altzone : timezone) / 60;
 #endif
 #else /* !HAVE_TZNAME */
