@@ -1,18 +1,20 @@
 /*
  * date.c
  *
- * Public domain implementation of Posix 1003.2
+ * Public domain implementation of POSIX 1003.1
  * date command.  Lets strftime() do the dirty work.
  *
- * Arnold Robbins
- * arnold@skeeve.atl.ga.us
+ * Initial version.
  * April, 1991
  *
- * Bug fix courtesy of Chris Ritson (C.R.Ritson@newcastle.ac.uk),
+ * Bug fix courtesy of Chris Ritson (C.R.Ritson@newcastle.ac.uk).
  * February, 1994.
  *
  * Add more header files, use ANSI prototype.
  * January, 2011.
+ *
+ * Arnold Robbins
+ * arnold@skeeve.com
  */
 
 #include <stdio.h>
@@ -34,7 +36,7 @@ int main(int argc, char **argv)
 	char *howto = defhow;
 	char *buf;
 
-	while ((c = getopt(argc, argv, "u")) != -1)
+	while ((c = getopt(argc, argv, "u")) != -1) {
 		switch (c) {
 		case 'u':
 			putenv("TZ=GMT0");
@@ -44,6 +46,7 @@ int main(int argc, char **argv)
 				argv[0]);
 			exit(1);
 		}
+	}
 
 	time(& clock);
 	now = localtime(& clock);

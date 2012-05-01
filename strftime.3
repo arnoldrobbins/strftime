@@ -308,6 +308,34 @@ is defined, then the following additional conversion is available:
 .TP
 .B %v
 The date in VMS format (e.g. 20-JUN-1991).
+.SS POSIX 2008 Extensions
+The POSIX 1003.1-2008 standard allows for a leading
+.I flag
+and
+.I "field width"
+for the
+.BR %C ,
+.BR %F ,
+.BR %G ,
+and
+.B %Y
+format specifiers.
+The flag may be either
+.BR 0 ,
+which specifies that the generated field should be padded with zeros, or
+.BR + ,
+which specifies that the padding with zeros should occur, and that the field
+will have a leading plus-sign
+if the value is positive, or a leading minus-sign if it is negative.
+.PP
+The field width is a value in decimal.
+Either the field width and a flag are present together, or neither of them
+may be supplied.
+The results are ``unspecified'' if only one or the other are provided,
+or if they are provided on a format specifier not in the preceding list.
+If
+.B POSIX_2008
+is defined, the code supports the leading flag and field width.
 .SS Other Extensions
 If
 .B HAVE_MKTIME

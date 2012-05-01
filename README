@@ -1,7 +1,7 @@
-Wed Jul  4 19:04:39 IDT 2001
+Mon Apr 16 16:10:00 MST 2012
 
-This package implements the Posix 1003.2 date command, as a wrapper around
-an extended version of the 1999 ISO C strftime(3) library routine.
+This package implements the POSIX 1003-2008 date command, as a wrapper around
+an extended version of the POSIX 1003-2008 ISO C strftime(3) library routine.
 Everything in it is public domain.
 
 Arnold Robbins				| Laundry increases exponentially
