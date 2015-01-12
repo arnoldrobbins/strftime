@@ -1,0 +1,31 @@
+Mon Jan 12 22:27:56 IST 2015
+============================
+
+This Git repo contains the full history of my public domain strftime and
+date package.  Using some simple scripts I converted the files from RCS
+to Git and was able to preserve the history of the dates when the files
+were checked in.
+
+And, due to the wonders of the Google and the Internet, I was able to find
+when different versions of the package had been posted to USENET in order
+to tag different versions with their corresponding release information.
+
+As a brief history, the first two versions were posted in
+comp.sources.misc.  Later I posted versions in comp.sources.unix. There
+was a disconnect in the numbering, such that releases 4.0 and 5.0 never
+existed.
+
+The last posted version was Release 7.0, made available for download
+from ftp://freefriends.org as Release 7.0a, since the posted version
+ended up with extra leading periods on the troff commands in the man page.
+
+Releases 8.0 and 9.0 were made available only via the freefriends.org
+site.
+
+The ChangeLog was reconstituted based on release dates and diffs. It's
+a best effort, but I think it's pretty close to what actually happened.
+
+Future work will be available via github.
+
+Arnold Robbins
+arnold@skeeve.com

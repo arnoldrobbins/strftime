@@ -1,0 +1,199 @@
+2015-01-12         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* ChangeLog: Reconstituted from diffs and log.
+
+2015-01-09         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* Makefile, README, date.1, date.c, strftime.3, strftime.c: Converted
+	the history over from RCS to git.
+	* NOTES: Created.
+
+2012-05-01         Arnold D. Robbins     <arnold@skeeve.com>
+
+	Release 9.0 made.
+
+	* README: Update date, note that we're now POSIX 2008 compatible.
+	* date.1: It's POSIX 1003, not 1003.2 anymore.
+	* date.c: Add more header files, use ANSI prototype. (January 2011).
+	* strftime.3: Document POSIX extensions.
+	* strftime.c (strftime): Add POSIX 2008 extensions, more
+	system-specific ifdefs.
+	(iso_8601_2000_year): New function.
+
+2011-12-06         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* strftime.c: Sync with bash 4.2.20.
+
+2011-01-24         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* strftime.c: Add ifdef for inline.
+	(strftime): For 'z', tm_isdst < 0, break. For not HAVE_TZNAME,
+	call gettimeofday(). Use %02ld for long value.
+
+2011-01-13         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* date.c: Add more header files, use ANSI prototype.
+	* strftime.c: Add HP/UX stuff.
+	Fixes from Tanaka Akira <akr@m17n.org>, remove gawk stuff.
+	(strftime): Make y (the year) a long. Adjust sprintf formats.
+	Improve comments on preprocessor control lines.
+	(isleap): Parameter is now a long.
+	* date.1: Make POSIX uppercase (December, 2001).
+
+2001-07-04         Arnold D. Robbins     <arnold@skeeve.com>
+
+	Release 8.0 made.
+
+	Update to C99 stuff.
+
+	* README: Refer to ISO C instead of ANSI C.
+	* date.1: Adjust email address formatting.
+	* strftime.3: Updated to reflect source from 1999 (draft) standard.
+	Text adjusted and improved. ISO 8601 format documented. Lots more.
+	* strftime.c: ISO instead of ANSI. Move to prototypes. More doc.
+	C 99 formats added. (Many moved from what were extensions.)
+
+2000-09-13         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* Makefile: Make -DHAVE_TM_ZONE default.
+	* README: Update email address to new personal domain.
+	* date.1: Ditto.
+	* strftime.3: Document HP/UX extensions.
+	* strftime.c (strftime): Add HP/UX extensions.
+	(timezone, altzone): Declare as long int instead of just long.
+	(tst): Update.
+
+1998-10-25         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* README: Update date.
+	* strftime.c (strftime): %v code fixed, better configuration (July
+	1997). Today: seconds are 0 - 60, not 61.
+	* strftime.3: Seconds are 0 - 60, not 61. New email address.
+
+1996-01-11         Arnold D. Robbins     <arnold@skeeve.com>
+
+	Release 7.0 / 7.0a made.
+	Comp.sources.unix: Volume 29, Issue 72.
+
+	* strftime.c: Fix up comments.
+	(strftime): %V code fixed (again) and %G, %g added,
+	* README: Date changed, email address updated.
+	* strftime.3: Document ISO date format extensions. Update email.
+
+1995-12-26         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* README: Update date.
+	* strftime.c: Update "updated" info.  Fixes for TZNAME, other
+	minor changes.
+
+1995-09-11         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* strftime.c (strftime): %z code from Chip Rosenthal
+	<chip@chinacat.unicom.com>.
+	The code for %c, %x, and %X now follows the 1003.2 specification.
+	* strftime.3: Document same.
+	* README: Update date.
+
+1994-05-18         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* strftime.c (tst): Change VAX to VMS in test program description.
+
+1994-05-11         Arnold D. Robbins     <arnold@skeeve.com>
+
+	Release 6.1 made.
+	Comp.sources.unix: Volume 28, Issue 34
+
+	* README: Update date.
+	* strftime.c: Move <sys/types.h> include into ifdef for
+	TM_IN_SYS_TIME.
+
+1994-05-01         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* strftime.c (strftime): Fixes to use timezone function if no tm_zone
+	member, from ghazi@noc.rutgers.edu.
+	(iso8601wknum): Fixes for ISO 8601 method of date calculation, use
+	week 52 or 53.
+	(isleap): New function
+	* strftime.c: Update comments.
+	* Makefile (CFLAGS): Update with more options.
+	* README: Update date.
+	* date.1: Posix isn't a draft anymore.
+	* strftime.3: Fixes for ISO 8601 method of date calculation, use
+	week 52 or 53.
+
+1994-02-22         Arnold D. Robbins     <arnold@skeeve.com>
+
+	Release 6.0 made.
+	Comp.sources.unix: Volume 27, Issue 207.
+
+	* README: Update date.
+
+1994-02-15         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* Makefile: Document TM_IN_SYS_TIME define.
+	* README: Update the date.
+
+1994-02-13         Arnold D. Robbins     <arnold@skeeve.com>
+
+	Release 3.1 made.
+	Comp.sources.unix: Volume 26, Issue 235.
+
+	* Makefile: Document HAVE_TZNAME define.
+	* date.c: Doc updates. Bug fix courtesy of Chris Ritson
+	<C.R.Ritson@newcastle.ac.uk>.
+	* strftime.3: Make current with the code and POSIX standard.
+	* strftime.c: Use %02d as needed, const, other fixes from
+	ado@elsie.nci.nih.gov. (Apparently done April 1993).
+	(iso8601wknum): More fixes, mostly from ado@elsie.nci.nih.gov.
+	(weeknumber): Ditto
+
+1993-05-07         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* strftime.c (iso8601wknum): Fixes from Tol Lillqvist <tor@tik.vtt.fi>.
+	(tst): Test driver from Karl Vogel at Control Data.
+
+1993-05-02         Arnold D. Robbins     <arnold@skeeve.com>
+
+	Release 3.0 made.
+	Comp.sources.unix: Volume 26, Issue 208.
+
+	* Makefile (clean): Removed.
+	* README: 1003.2 is not a draft anymore.
+	* strftime.3: SunOS extensions. Improve SEE ALSO section.
+	* strftime.c: SunOS extensions, compilation improvements.
+
+1992-05-07         Arnold D. Robbins     <arnold@skeeve.com>
+
+	Release 2.0 made.
+	Comp.sources.unix: Volume 26, Issue 115.
+
+	* Makefile (clean): New target.
+	* README: Indicate update to POSIX 1003.2 D11.3.
+	* strftime.3: Add %u and %V, more doc.
+	* strftime.c: Include gawk-specific bits. General code improvements,
+	including ISO 8601 week calculations.
+
+1992-03-23         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* Makefile, README, date.1, date.c: New files.
+	* strftime.3: Formatting fixes, document POSIX and VMS additions.
+	Update address and acknowledgements.
+	* strftime.c: Add POSIX date stuff, POSIX semantics, VMS date format.
+	Improve code with a range checking function.
+
+1991-03-02         Arnold D. Robbins     <arnold@skeeve.com>
+
+	Release 1.1 (not really an official version).
+	Comp.sources.misc: Volume 17, Issue 30.
+
+	* strftime (strftime): Call tzset() only once. Range checking on values.
+	(weeknumber): Fixes from ado@elsie.nci.nih.gov.
+	* strftime.3: Minor edits, document tzset() behavior.
+
+1991-02-07         Arnold D. Robbins     <arnold@skeeve.com>
+
+	Release 1.0 (not really an official version).
+	Comp.sources.misc: Volume 16, Issue 94.
+
+	* strftime.c, strftime.3: Initial versions.
+	(Initial work started in January 1991.)
