@@ -7,11 +7,10 @@ strftime \- generate formatted time information
 #include <sys/types.h>
 #include <time.h>
 .sp
-size_t strftime(char *s, size_t maxsize, const char *format,
-	const struct tm *timeptr);
+size_t strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr);
 .fi
 .SH DESCRIPTION
-The following description is transcribed verbatim from the January 18, 1999
+The following description is transcribed verbatim from the April 12, 2011
 draft standard for ISO C.
 This draft is essentially identical in technical content
 to the final version of the standard.
@@ -57,20 +56,24 @@ stored are unspecified.''
 .TP
 .B %a
 is replaced by the locale's abbreviated weekday name.
+.RB [ tm_wday ]
 .TP
 .B %A
 is replaced by the locale's full weekday name.
+.RB [ tm_wday ]
 .TP
 .B %b
 is replaced by the locale's abbreviated month name.
+.RB [ tm_mon ]
 .TP
 .B %B
 is replaced by the locale's full month name.
+.RB [ tm_mon ]
 .TP
 .B %c
 is replaced by the locale's appropriate date and time representation.
 (This is
-.B "%A %B %d %T %Y"
+\fB"%a %b %e %T %Y"\fR
 in the \fB"C"\fR
 locale.)
 .TP
@@ -78,57 +81,70 @@ locale.)
 is replaced by the year divided by 100 and truncated to an integer,
 as a decimal number
 .RB ( 00 - 99 ).
+.RB [ tm_year ]
 .TP
 .B %d
 is replaced by the day of the month as a decimal number
 .RB ( 01 - 31 ).
+.RB [ tm_mday ]
 .TP
 .B %D
 is equivalent to
 .BR %m/%d/%y .
+.RB [ tm_mon ", " tm_mday ", " tm_year ]
 .TP
 .B %e
 is replaced by the day of the month as a decimal number
 .RB ( 1 - 31 );
 a single digit is preceded by a space.
+.RB [ tm_mday ]
 .TP
 .B %F
 is equivalent to
 .B %Y\-%m\-%d
 (the ISO 8601 date format).
+.RB [ tm_year ", " tm_mon ", " tm_mday ]
 .TP
 .B %g
 is replaced by the year without century of the ISO week number
 as a decimal number
 .RB ( 00 - 99 ).
+.RB [ tm_year ", " tm_wday ", " tm_yday ]
 .TP
 .B %G
 is replaced by the year with century of the ISO week number
 as a decimal number.
+.RB [ tm_year ", " tm_wday ", " tm_yday ]
 .TP
 .B %h
 is equivalent to
 .BR %b .
+.RB [ tm_mon ]
 .TP
 .B %H
 is replaced by the hour (24-hour clock) as a decimal number
 .RB ( 00 - 23 ).
+.RB [ tm_hour ]
 .TP
 .B %I
 is replaced by the hour (12-hour clock) as a decimal number
 .RB ( 01 - 12 ).
+.RB [ tm_hour ]
 .TP
 .B %j
 is replaced by the day of the year as a decimal number
 .RB ( 001 - 366 ).
+.RB [ tm_yday ]
 .TP
 .B %m
 is replaced by the month as a decimal number
 .RB ( 01 - 12 ).
+.RB [ tm_mon ]
 .TP
 .B %M
 is replaced by the minute as a decimal number
 .RB ( 00 - 59 ).
+.RB [ tm_min ]
 .TP
 .B %n
 is replaced with a newline character (\s-1ASCII LF\s+1).
@@ -136,21 +152,25 @@ is replaced with a newline character (\s-1ASCII LF\s+1).
 .B %p
 is replaced by the locale's equivalent of the AM/PM designations associated
 with a 12-hour clock.
+.RB [ tm_hour ]
 .TP
 .B %r
 is replaced by the locale's 12-hour clock time.
 (This is
-.B "%I:%M:%S %p"
+\fB"%I:%M:%S %p"\fR
 in the \fB"C"\fR
 locale.)
+.RB [ tm_hour ", " tm_min ", " tm_sec ]
 .TP
 .B %R
 is equivalent to
 .BR %H:%M .
+.RB [ tm_hour ", " tm_min ]
 .TP
 .B %S
 is replaced by the second as a decimal number
 .RB ( 00 - 60 ).
+.RB [ tm_sec ]
 .TP
 .B %t
 is replaced with a \s-1TAB\s+1 character.
@@ -158,34 +178,40 @@ is replaced with a \s-1TAB\s+1 character.
 .B %T
 is equivalent to
 .BR %H:%M:%S .
+.RB [ tm_hour ", " tm_min ", " tm_sec ]
 .TP
 .B %u
 is replaced by the ISO 8601 weekday as a decimal number
 .RB [ "1 " (Monday)- 7 ].
+.RB [ tm_wday ]
 .TP
 .B %U
 is replaced by the week number of the year (the first Sunday as the first
 day of week 1) as a decimal number
 .RB ( 00 - 53 ).
+.RB [ tm_year ", " tm_wday ", " tm_yday ]
 .TP
 .B %V
 is replaced by the ISO 8601 week number of the year (the first Monday as the first
 day of week 1) as a decimal number
 .RB ( 01 - 53 ).
+.RB [ tm_year ", " tm_wday ", " tm_yday ]
 .TP
 .B %w
 is replaced by the weekday as a decimal number
 .RB [ "0 " (Sunday)- 6 ].
+.RB [ tm_wday ]
 .TP
 .B %W
 is replaced by the week number of the year (the first Monday as the first
 day of week 1) as a decimal number
 .RB ( 00 - 53 ).
+.RB [ tm_year ", " tm_wday ", " tm_yday ]
 .TP
 .B %x
 is replaced by the locale's appropriate date representation.
 (This is
-.B "%A %B %d %Y"
+\fB"%x/%d/%y"\fR
 in the \fB"C"\fR
 locale.)
 .TP
@@ -199,17 +225,21 @@ locale.)
 .B %y
 is replaced by the year without century as a decimal number
 .RB ( 00 - 99 ).
+.RB [ tm_year ]
 .TP
 .B %Y
 is replaced by the year with century as a decimal number.
+.RB [ tm_year ]
 .TP
 .B %z
 The timezone offset in a +HHMM format (e.g. the format necessary to
 produce RFC-822/RFC-1036 date headers).
+.RB [ tm_isdst ]
 .TP
 .B %Z
 is replaced by the time zone name or abbreviation, or by no characters if
 no time zone is determinable.
+.RB [ tm_isdst ]
 .TP
 .B %%
 is replaced by
@@ -217,8 +247,42 @@ is replaced by
 .LP
 If a conversion specifier is not one of the above, the behavior is
 undefined.
+.LP
+The draft standard says this about the ISO 8601 week-based year:
+.RS
+.ll -.5i
+.LP
+.BR %g ,
+.BR %G ,
+and
+.B %V
+give values according to the ISO 8601 week-based year.
+In this system, weeks begin on a Monday and week 1 of the year is the week
+that includes January 4th, which is also the week that includes the
+first Thursday of the year, and is also the first week that contains at
+least four days in the year.
+If the first Monday of January is the 2nd, 3rd, or 4th, the preceding
+days are part of the last week of the preceding year; thus for Saturday
+2nd January 1999,
+.B %G
+is replaced by 1998 and
+.B %V
+is replaced by
+.BR 53 .
+If December 29th, 30th, or 31st is a Monday, it and any following days
+are part of week 1 of the following year.
+Thus, for Tuesday 30th December 1997,
+.B %G
+is replaced by 1998 and
+.B %V
+is replaced by
+.BR 01 .
+.RE
+.ll
+.LP
+A somewhat more readable description of the algorithm is provided below.
 .SH RETURNS
-If the total number of resulting characters including the terminating null
+``If the total number of resulting characters including the terminating null
 character is not more than
 .BR maxsize ,
 the
@@ -227,7 +291,7 @@ function returns the number of characters placed into the array pointed to
 by
 .B s
 not including the terminating null character.
-Otherwise, zero is returned and the contents of the array are indeterminate.
+Otherwise, zero is returned and the contents of the array are indeterminate.''
 .SH ISO 8601
 The method for determining the week number as specified by ISO 8601 is:
 if the week containing January 1 has four or more days in the
@@ -361,7 +425,7 @@ The ``appropriate'' values used for
 .BR %x ,
 are
 .B %X
-are always those specified by the 1999 ISO C standard for the \fB"C"\fR locale.
+are always those specified by the 2011 ISO C standard for the \fB"C"\fR locale.
 .SH CAVEATS
 The pre-processor symbol
 .B POSIX_SEMANTICS

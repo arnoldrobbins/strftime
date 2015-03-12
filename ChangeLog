@@ -1,3 +1,12 @@
+2015-03-12         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* strftime.3: Synchronized to April 12, 2011 draft standard.
+	Added quotation from standard on ISO 8601 week numbers.
+	* strftime.c (strftime): Synchronized to April 12, 2011 draft
+	standard.  This affects %c and %x.
+	(main): Use ANSI C signature! Remove decl of time(). Updated the
+	test strings to be in sync / more correct.
+
 2015-01-12         Arnold D. Robbins     <arnold@skeeve.com>
 
 	* ChangeLog: Reconstituted from diffs and log.

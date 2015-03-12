@@ -335,9 +335,12 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 			 *
 			 * strftime(tbuf, sizeof tbuf, "%a %b %e %H:%M:%S %Y", timeptr);
 			 *
-			 * Now, per the ISO 1999 C standard, it this:
+			 * Per the ISO 1999 C standard, it was this:
+			 * strftime(tbuf, sizeof tbuf, "%A %B %d %T %Y", timeptr);
+			 *
+			 * Per the ISO 2011 C standard, it is now this:
 			 */
-			strftime(tbuf, sizeof tbuf, "%A %B %d %T %Y", timeptr);
+			strftime(tbuf, sizeof tbuf, "%a %b %e %T %Y", timeptr);
 			break;
 
 		case 'C':
@@ -543,7 +546,13 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 			break;
 
 		case 'x':	/* appropriate date representation */
-			strftime(tbuf, sizeof tbuf, "%A %B %d %Y", timeptr);
+			/*
+			 * Up to the 2011 standard, this code used:
+			 * strftime(tbuf, sizeof tbuf, "%A %B %d %Y", timeptr);
+			 *
+			 * Now, per the 2011 C standard, this is:
+			 */
+			strftime(tbuf, sizeof tbuf, "%m/%d/%y", timeptr);
 			break;
 
 		case 'X':	/* appropriate time representation */
@@ -922,7 +931,7 @@ static char *array[] =
 	"(%%C)                                               Century  %C",
 	"(%%D)                                       date (%%m/%%d/%%y)  %D",
 	"(%%E)                           Locale extensions (ignored)  %E",
-	"(%%F)       full month name, var length (January..December)  %F",
+	"(%%F)                           year-month-day (YYYY-MM-DD)  %F",
 	"(%%H)                          hour (24-hour clock, 00..23)  %H",
 	"(%%I)                          hour (12-hour clock, 01..12)  %I",
 	"(%%M)                                       minute (00..59)  %M",
@@ -934,12 +943,12 @@ static char *array[] =
 	"(%%U)    week of year, Sunday as first day of week (00..53)  %U",
 	"(%%V)                    week of year according to ISO 8601  %V",
 	"(%%W)    week of year, Monday as first day of week (00..53)  %W",
-	"(%%X)     appropriate locale time representation (%H:%M:%S)  %X",
+	"(%%X)     appropriate locale time representation (%%H:%%M:%%S)  %X",
 	"(%%Y)                           year with century (1970...)  %Y",
 	"(%%Z) timezone (EDT), or blank if timezone not determinable  %Z",
 	"(%%a)          locale's abbreviated weekday name (Sun..Sat)  %a",
 	"(%%b)            locale's abbreviated month name (Jan..Dec)  %b",
-	"(%%c)           full date (Sat Nov  4 12:02:33 1989)%n%t%t%t  %c",
+	"(%%c)           full date + newline (Sat Nov  4 12:02:33 1989)%n%t%t%t  %c",
 	"(%%d)                             day of the month (01..31)  %d",
 	"(%%e)               day of the month, blank-padded ( 1..31)  %e",
 	"(%%h)                                should be same as (%%b)  %h",
@@ -962,12 +971,8 @@ static char *array[] =
 /* main routine. */
 
 int
-main(argc, argv)
-int argc;
-char **argv;
+main(int argc, char **argv)
 {
-	long time();
-
 	char *next;
 	char string[MAXTIME];
 
@@ -988,6 +993,6 @@ char **argv;
 		printf("%s\n", string);
 	}
 
-	exit(0);
+	return 0;
 }
 #endif	/* TEST_STRFTIME */
