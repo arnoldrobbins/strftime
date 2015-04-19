@@ -1,3 +1,7 @@
+2015-04-19         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* strftime.c: Update leading comments.
+
 2015-03-12         Arnold D. Robbins     <arnold@skeeve.com>
 
 	* strftime.3: Synchronized to April 12, 2011 draft standard.

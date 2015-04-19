@@ -13,7 +13,10 @@
  * For VMS dates, add VMS_EXT.
  * For complete POSIX semantics, add POSIX_SEMANTICS.
  *
- * The code for %c, %x, and %X follows the C99 specification for
+ * The code for %X follows the C99 specification for
+ * the "C" locale.
+ *
+ * The code for %c, and %x follows the C11 specification for
  * the "C" locale.
  *
  * This version ignores LOCALE information.
@@ -35,6 +38,7 @@
  * Updated December, 2001
  * Updated January, 2011
  * Updated April, 2012
+ * Updated March, 2015
  *
  * Fixes from ado@elsie.nci.nih.gov,
  * February 1991, May 1992
