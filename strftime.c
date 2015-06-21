@@ -19,8 +19,9 @@
  * The code for %c, and %x follows the C11 specification for
  * the "C" locale.
  *
- * This version ignores LOCALE information.
- * It also doesn't worry about multi-byte characters.
+ * With HAVE_NL_LANGINFO defined, locale-based values are used.
+ *
+ * This version doesn't worry about multi-byte characters.
  * So there.
  *
  * Arnold Robbins
@@ -39,6 +40,7 @@
  * Updated January, 2011
  * Updated April, 2012
  * Updated March, 2015
+ * Updated June, 2015
  *
  * Fixes from ado@elsie.nci.nih.gov,
  * February 1991, May 1992
@@ -76,8 +78,13 @@
 #define HPUX_EXT	1	/* non-conflicting stuff in HP-UX date */
 #define POSIX_SEMANTICS	1	/* call tzset() if TZ changes */
 #define POSIX_2008	1	/* flag and fw for C, F, G, Y formats */
+#define HAVE_NL_LANGINFO	1	/* locale-based values */
 
 #undef strchr	/* avoid AIX weirdness */
+
+#ifdef HAVE_NL_LANGINFO
+#include <langinfo.h>
+#endif
 
 extern void tzset(void);
 static int weeknumber(const struct tm *timeptr, int firstweekday);
@@ -158,6 +165,146 @@ iso_8601_2000_year(char *buf, int year, size_t fw)
 }
 #endif /* POSIX_2008 */
 
+/* days_a --- return the short name for the day of the week */
+
+static const char *
+days_a(int index)
+{
+#ifdef HAVE_NL_LANGINFO
+	static const nl_item data[] = {
+		ABDAY_1,
+		ABDAY_2,
+		ABDAY_3,
+		ABDAY_4,
+		ABDAY_5,
+		ABDAY_6,
+		ABDAY_7,
+	};
+
+	return nl_langinfo(data[index]);
+#else
+	static const char *data[] = {
+		"Sun", "Mon", "Tue", "Wed",
+		"Thu", "Fri", "Sat",
+	};
+
+	return data[index];
+#endif
+}
+
+/* days_l --- return the long name for the day of the week */
+
+static const char *
+days_l(int index)
+{
+#ifdef HAVE_NL_LANGINFO
+	static const nl_item data[] = {
+		DAY_1,
+		DAY_2,
+		DAY_3,
+		DAY_4,
+		DAY_5,
+		DAY_6,
+		DAY_7,
+	};
+
+	return nl_langinfo(data[index]);
+#else
+	static const char *data[] = {
+		"Sunday", "Monday", "Tuesday", "Wednesday",
+		"Thursday", "Friday", "Saturday",
+	};
+
+	return data[index];
+#endif
+}
+
+/* months_a --- return the short name for the month */
+
+static const char *
+months_a(int index)
+{
+#ifdef HAVE_NL_LANGINFO
+	static const nl_item data[] = {
+		ABMON_1,
+		ABMON_2,
+		ABMON_3,
+		ABMON_4,
+		ABMON_5,
+		ABMON_6,
+		ABMON_7,
+		ABMON_8,
+		ABMON_9,
+		ABMON_10,
+		ABMON_11,
+		ABMON_12,
+	};
+
+	return nl_langinfo(data[index]);
+#else
+	static const char *data[] = {
+		"Jan", "Feb", "Mar", "Apr", "May", "Jun",
+		"Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+	};
+
+	return data[index];
+#endif
+}
+
+/* months_l --- return the short name for the month */
+
+static const char *
+months_l(int index)
+{
+#ifdef HAVE_NL_LANGINFO
+	static const nl_item data[] = {
+		MON_1,
+		MON_2,
+		MON_3,
+		MON_4,
+		MON_5,
+		MON_6,
+		MON_7,
+		MON_8,
+		MON_9,
+		MON_10,
+		MON_11,
+		MON_12,
+	};
+
+	return nl_langinfo(data[index]);
+#else
+	static const char *data[] = {
+		"January", "February", "March", "April",
+		"May", "June", "July", "August", "September",
+		"October", "November", "December",
+	};
+
+	return data[index];
+#endif
+}
+
+/* days_a --- return am/pm string */
+
+static const char *
+ampm(int index)
+{
+#ifdef HAVE_NL_LANGINFO
+	static const nl_item data[] = {
+		AM_STR,
+		PM_STR,
+	};
+
+	return nl_langinfo(data[index]);
+#else
+	static const char *data[] = {
+		"AM", "PM",
+	};
+
+	return data[index];
+#endif
+}
+
 /* strftime --- produce formatted time */
 
 size_t
@@ -192,25 +339,6 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 	char flag;
 #endif /* POSIX_2008 */
 
-	/* various tables, useful in North America */
-	static const char *days_a[] = {
-		"Sun", "Mon", "Tue", "Wed",
-		"Thu", "Fri", "Sat",
-	};
-	static const char *days_l[] = {
-		"Sunday", "Monday", "Tuesday", "Wednesday",
-		"Thursday", "Friday", "Saturday",
-	};
-	static const char *months_a[] = {
-		"Jan", "Feb", "Mar", "Apr", "May", "Jun",
-		"Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-	};
-	static const char *months_l[] = {
-		"January", "February", "March", "April",
-		"May", "June", "July", "August", "September",
-		"October", "November", "December",
-	};
-	static const char *ampm[] = { "AM", "PM", };
 
 	if (s == NULL || format == NULL || timeptr == NULL || maxsize == 0)
 		return 0;
@@ -308,14 +436,14 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 			if (timeptr->tm_wday < 0 || timeptr->tm_wday > 6)
 				strcpy(tbuf, "?");
 			else
-				strcpy(tbuf, days_a[timeptr->tm_wday]);
+				strcpy(tbuf, days_a(timeptr->tm_wday));
 			break;
 
 		case 'A':	/* full weekday name */
 			if (timeptr->tm_wday < 0 || timeptr->tm_wday > 6)
 				strcpy(tbuf, "?");
 			else
-				strcpy(tbuf, days_l[timeptr->tm_wday]);
+				strcpy(tbuf, days_l(timeptr->tm_wday));
 			break;
 
 		case 'b':	/* abbreviated month name */
@@ -323,14 +451,14 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 			if (timeptr->tm_mon < 0 || timeptr->tm_mon > 11)
 				strcpy(tbuf, "?");
 			else
-				strcpy(tbuf, months_a[timeptr->tm_mon]);
+				strcpy(tbuf, months_a(timeptr->tm_mon));
 			break;
 
 		case 'B':	/* full month name */
 			if (timeptr->tm_mon < 0 || timeptr->tm_mon > 11)
 				strcpy(tbuf, "?");
 			else
-				strcpy(tbuf, months_l[timeptr->tm_mon]);
+				strcpy(tbuf, months_l(timeptr->tm_mon));
 			break;
 
 		case 'c':	/* appropriate date and time representation */
@@ -344,7 +472,11 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 			 *
 			 * Per the ISO 2011 C standard, it is now this:
 			 */
+#ifdef HAVE_NL_LANGINFO
+			strftime(tbuf, sizeof tbuf, nl_langinfo(D_T_FMT), timeptr);
+#else
 			strftime(tbuf, sizeof tbuf, "%a %b %e %T %Y", timeptr);
+#endif
 			break;
 
 		case 'C':
@@ -487,9 +619,9 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 		case 'p':	/* am or pm based on 12-hour clock */
 			i = range(0, timeptr->tm_hour, 23);
 			if (i < 12)
-				strcpy(tbuf, ampm[0]);
+				strcpy(tbuf, ampm(0));
 			else
-				strcpy(tbuf, ampm[1]);
+				strcpy(tbuf, ampm(1));
 			break;
 
 		case 'r':	/* time as %I:%M:%S %p */
@@ -556,11 +688,19 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 			 *
 			 * Now, per the 2011 C standard, this is:
 			 */
+#ifdef HAVE_NL_LANGINFO
+			strftime(tbuf, sizeof tbuf, nl_langinfo(D_FMT), timeptr);
+#else
 			strftime(tbuf, sizeof tbuf, "%m/%d/%y", timeptr);
+#endif
 			break;
 
 		case 'X':	/* appropriate time representation */
+#ifdef HAVE_NL_LANGINFO
+			strftime(tbuf, sizeof tbuf, nl_langinfo(T_FMT), timeptr);
+#else
 			goto the_time;
+#endif
 			break;
 
 		case 'y':	/* year without a century, 00 - 99 */
@@ -678,8 +818,12 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 
 #ifdef HPUX_EXT
 		case 'N':	/* Emperor/Era name */
+#ifdef HAVE_NL_LANGINFO
+			strftime(tbuf, sizeof tbuf, nl_langinfo(ERA), timeptr);
+#else
 			/* this is essentially the same as the century */
 			goto century;	/* %C */
+#endif
 
 		case 'o':	/* Emperor/Era year */
 			goto year;	/* %y */
@@ -690,7 +834,7 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 		case 'v':	/* date as dd-bbb-YYYY */
 			sprintf(tbuf, "%2d-%3.3s-%4ld",
 				range(1, timeptr->tm_mday, 31),
-				months_a[range(0, timeptr->tm_mon, 11)],
+				months_a(range(0, timeptr->tm_mon, 11)),
 				timeptr->tm_year + 1900L);
 			for (i = 3; i < 6; i++)
 				if (islower(tbuf[i]))
@@ -919,6 +1063,7 @@ How nicer it depends on a compiler, of course, but always a tiny bit.
 #ifndef NULL
 #include	<stdio.h>
 #endif
+#include	<locale.h>
 #include	<sys/time.h>
 #include	<string.h>
 
@@ -986,6 +1131,8 @@ main(int argc, char **argv)
 	struct tm *tm;
 
 	long clock;
+
+	setlocale(LC_ALL, "");
 
 	/* Call the function. */
 

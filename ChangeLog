@@ -1,3 +1,15 @@
+2015-06-21         Arnold D. Robbins     <arnold@skeeve.com>
+
+	Add access to nl_langinfo. Update comments.
+
+	* strftime.c (days_a, days_l, months_a, months_l, ampm): New functions.
+	Use nl_langinfo if available.
+	(strftime): Use functions instead of static arrays. In a few other
+	places, use result from nl_langinfo.
+	(main): Call setlocale.
+
+	* date.c (main): Call setlocale.
+
 2015-04-19         Arnold D. Robbins     <arnold@skeeve.com>
 
 	* strftime.c: Update leading comments.

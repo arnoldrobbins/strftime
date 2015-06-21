@@ -18,6 +18,7 @@
  */
 
 #include <stdio.h>
+#include <locale.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -35,6 +36,8 @@ int main(int argc, char **argv)
 	char *defhow = "%a %b %e %H:%M:%S %Z %Y";
 	char *howto = defhow;
 	char *buf;
+
+	setlocale(LC_ALL, "");
 
 	while ((c = getopt(argc, argv, "u")) != -1) {
 		switch (c) {
