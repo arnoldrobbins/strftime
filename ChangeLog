@@ -1,3 +1,7 @@
+2015-06-22         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* strftime.3: Remove statement that only "C" locale is used.
+
 2015-06-21         Arnold D. Robbins     <arnold@skeeve.com>
 
 	Add access to nl_langinfo. Update comments.
