@@ -215,7 +215,7 @@
 	Release 1.1 (not really an official version).
 	Comp.sources.misc: Volume 17, Issue 30.
 
-	* strftime (strftime): Call tzset() only once. Range checking on values.
+	* strftime.c (strftime): Call tzset() only once. Range checking on values.
 	(weeknumber): Fixes from ado@elsie.nci.nih.gov.
 	* strftime.3: Minor edits, document tzset() behavior.
 
